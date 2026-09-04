@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RepoTale — buzzcobain/RepoTale</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    pre, code { font-family: 'Fira Code', monospace; }
+    .active-card { border-color: #6366f1 !important; box-shadow: 0 0 30px rgba(99, 102, 241, 0.25); transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
+        🧭
+      </div>
+      <div>
+        <h1 class="font-bold text-base text-white flex items-center gap-2">
+          buzzcobain/RepoTale
+          <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/50">TypeScript</span>
+        </h1>
+        <p class="text-xs text-slate-400 truncate max-w-md">Interactive, local-first codebase storytelling & AST architecture visualizer</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="https://repotale.com" target="_blank" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5">
+        <span>RepoTale Studio</span>
+        <span>↗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Split Screen Viewer -->
+  <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
+    <!-- Left Narrative Pane -->
+    <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80">
+      <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-xl">
+        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Interactive Architectural Story</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">Interactive, local-first codebase storytelling & AST architecture visualizer</p>
+        <div class="mt-4 flex flex-wrap gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: src/main.tsx</span>
+          <span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">Tauri v2</span><span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">React 18</span><span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">React Flow</span><span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">Tree-sitter</span><span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">Tailwind CSS</span>
+        </div>
+      </div>
+
+      <!-- Chapters Feed -->
+      <div id="chapters-list" class="space-y-8"></div>
+    </div>
+
+    <!-- Right Dynamic Graph Canvas -->
+    <div class="lg:col-span-6 sticky top-[65px] h-[calc(100vh-65px)] bg-slate-900/40 p-6 flex flex-col justify-between overflow-hidden">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-slate-300">Live Architecture Graph</h2>
+        </div>
+        <span id="current-chapter-indicator" class="text-xs font-mono text-indigo-400">Chapter 1 Focus</span>
+      </div>
+
+      <!-- Mermaid Flow Container -->
+      <div class="flex-1 flex items-center justify-center p-4 overflow-auto">
+        <div id="mermaid-diagram" class="mermaid w-full"></div>
+      </div>
+
+      <!-- Active Focus Footer -->
+      <div class="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 shadow-lg flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="font-semibold text-white">Active Nodes:</span>
+          <span id="active-nodes-list" class="font-mono text-indigo-300">Loading...</span>
+        </div>
+        <span class="text-slate-500 text-[11px]">Scroll to change focus</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STORY = {"meta":{"repoName":"buzzcobain/RepoTale","description":"Interactive, local-first codebase storytelling & AST architecture visualizer","primaryLanguage":"TypeScript","frameworks":["Tauri v2","React 18","React Flow","Tree-sitter","Tailwind CSS"],"entryPoint":"src/main.tsx","githubUrl":"https://github.com/buzzcobain/RepoTale","analyzedAt":"2026-09-04T22:22:21.194Z"},"callGraph":{"nodes":[{"id":"src-tauri/src/main.rs:main","label":"Tauri Desktop Entry","type":"entry","filePath":"src-tauri/src/main.rs","lineRange":[1,10],"description":"Boots native desktop shell and registers IPC handlers"},{"id":"src-tauri/src/git.rs:GitSandbox","label":"Git Sandbox Ingestion","type":"service","filePath":"src-tauri/src/git.rs","lineRange":[15,65],"description":"Executes sanitized shallow git clones in isolated temp directories"},{"id":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"Tree-sitter AST Engine","type":"service","filePath":"src-tauri/src/ast/parser.rs","lineRange":[50,180],"description":"Extracts functions, classes, call-sites, and imports across TS, Python, and Rust"},{"id":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"React Flow Canvas","type":"service","filePath":"src/components/graph/CodeGraphCanvas.tsx","lineRange":[40,190],"description":"Dynamic visual architecture graph with Dagre layout and camera tracking"},{"id":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"Parallax Narrative Pane","type":"service","filePath":"src/components/narrative/NarrativePane.tsx","lineRange":[20,110],"description":"Chapter-driven walkthrough synchronized with graph camera via IntersectionObserver"},{"id":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"Architectural Q&A Sidecar","type":"middleware","filePath":"src/components/sidecar/QASidecarDrawer.tsx","lineRange":[30,140],"description":"Context-grounded copilot answering inquiries using active AST symbols"},{"id":"src-tauri/src/export.rs:export_all","label":"Dual-Layer Export Engine","type":"utility","filePath":"src-tauri/src/export.rs","lineRange":[250,310],"description":"Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles"}],"edges":[{"id":"e1","source":"src-tauri/src/main.rs:main","target":"src-tauri/src/git.rs:GitSandbox","label":"clones sandbox"},{"id":"e2","source":"src-tauri/src/git.rs:GitSandbox","target":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"parses AST"},{"id":"e3","source":"src-tauri/src/ast/parser.rs:RepoAstParser","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"renders layout"},{"id":"e4","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"synchronizes focus"},{"id":"e5","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"jumps to chapter on click"},{"id":"e6","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"grounds Q&A"},{"id":"e7","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src-tauri/src/export.rs:export_all","label":"exports docs"}]},"chapters":[{"id":"rep-1","chapterNumber":1,"title":"Sandboxed Git Ingestion & AST Extraction","summary":"Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.","narrative":"When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.","activeNodes":["src-tauri/src/main.rs:main","src-tauri/src/git.rs:GitSandbox","src-tauri/src/ast/parser.rs:RepoAstParser"],"codeSnippets":[{"filePath":"src-tauri/src/git.rs","startLine":20,"endLine":40,"annotation":"GitSandbox isolates repository files and validates URLs against shell injection.","code":"pub fn clone_repo(url: &str) -\u003e Result\u003cSelf\u003e {\n    let sanitized_url = sanitize_git_url(url)?;\n    let sandbox = Self::new()?;\n\n    let status = Command::new(\"git\")\n        .arg(\"clone\")\n        .arg(\"--depth\")\n        .arg(\"1\")\n        .arg(&sanitized_url)\n        .arg(&sandbox.path)\n        .status()?;\n\n    if !status.success() {\n        let _ = sandbox.cleanup();\n        return Err(anyhow!(\"Git clone failed\"));\n    }\n    Ok(sandbox)\n}"}]},{"id":"rep-2","chapterNumber":2,"title":"Bidirectional Parallax Canvas & Camera Choreography","summary":"Synchronizing scroll progress with React Flow camera animations and node click navigation.","narrative":"The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.","activeNodes":["src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","src/components/narrative/NarrativePane.tsx:NarrativePane"],"codeSnippets":[{"filePath":"src/context/StoryContext.tsx","startLine":70,"endLine":95,"annotation":"selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.","code":"const selectNode = (nodeId: string | null) =\u003e {\n  setSelectedNodeId(nodeId);\n  if (!nodeId) return;\n\n  const targetChapterIdx = story.chapters.findIndex((chap) =\u003e\n    chap.activeNodes.includes(nodeId)\n  );\n\n  if (targetChapterIdx !== -1) {\n    setActiveChapterIndex(targetChapterIdx);\n    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);\n    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });\n  }\n};"}]},{"id":"rep-3","chapterNumber":3,"title":"Context-Grounded Q&A & Dual-Layer Export","summary":"Zero-hallucination architectural queries and automated GitHub Pages exporter.","narrative":"The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.","activeNodes":["src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","src-tauri/src/export.rs:export_all"],"codeSnippets":[{"filePath":"src-tauri/src/export.rs","startLine":258,"endLine":285,"annotation":"export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.","code":"pub fn export_all(payload: &ExportPayload) -\u003e Result\u003cExportResult\u003e {\n    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;\n    let static_html = generate_standalone_html(&payload.story_json);\n    fs::write(docs_dir.join(\"index.html\"), &static_html)?;\n\n    if payload.create_git_branch {\n        Command::new(\"git\").args([\"checkout\", \"-B\", branch]).status()?;\n        Command::new(\"git\").args([\"add\", \"README.md\", \"docs/index.html\"]).status()?;\n        Command::new(\"git\").args([\"commit\", \"-m\", \"docs: add RepoTale guide\"]).status()?;\n        Command::new(\"git\").args([\"push\", \"-u\", \"origin\", branch]).status()?;\n    }\n}"}]}]};
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        primaryColor: '#6366f1',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#4f46e5',
+        lineColor: '#818cf8',
+        secondaryColor: '#1e293b',
+        tertiaryColor: '#0f172a'
+      }
+    });
+
+    function escapeHtml(text) {
+      return (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Build Mermaid
+    function renderDiagram() {
+      let code = 'flowchart TD\n';
+      (STORY.callGraph.nodes || []).forEach(n => {
+        const id = n.id.replace(/[:/.-]/g, '_');
+        const label = n.label.replace(/"/g, "'");
+        code += '  ' + id + '["' + label + '"]\n';
+      });
+      (STORY.callGraph.edges || []).forEach(e => {
+        const s = e.source.replace(/[:/.-]/g, '_');
+        const t = e.target.replace(/[:/.-]/g, '_');
+        if (e.label) {
+          code += '  ' + s + ' -->|"' + e.label + '"| ' + t + '\n';
+        } else {
+          code += '  ' + s + ' --> ' + t + '\n';
+        }
+      });
+      const container = document.getElementById('mermaid-diagram');
+      container.innerHTML = code;
+      mermaid.run({ nodes: [container] });
+    }
+
+    // Render Chapters
+    const chaptersList = document.getElementById('chapters-list');
+    (STORY.chapters || []).forEach((chap, i) => {
+      const card = document.createElement('div');
+      card.className = 'chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700';
+      card.setAttribute('data-index', i);
+
+      let snippets = '';
+      (chap.codeSnippets || []).forEach(s => {
+        snippets += `
+          <div class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner">
+            <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
+              <span>📄 ${escapeHtml(s.filePath)}:${s.startLine}-${s.endLine}</span>
+              <span class="text-indigo-400 font-sans">${escapeHtml(s.annotation || '')}</span>
+            </div>
+            <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>${escapeHtml(s.code)}</code></pre>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">Chapter ${chap.chapterNumber}</span>
+          <h3 class="text-lg font-bold text-white tracking-tight">${escapeHtml(chap.title)}</h3>
+        </div>
+        <p class="text-sm font-medium text-slate-300 mb-3">${escapeHtml(chap.summary)}</p>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">${escapeHtml(chap.narrative)}</p>
+        <div class="flex flex-wrap gap-1.5 mb-2">
+          ${(chap.activeNodes || []).map(nodeId => `<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700">${escapeHtml(nodeId.split(':').pop())}</span>`).join('')}
+        </div>
+        ${snippets}
+      `;
+      chaptersList.appendChild(card);
+    });
+
+    // Parallax scroll spy
+    const pane = document.getElementById('narrative-pane');
+    const cards = document.querySelectorAll('.chapter-card');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          cards.forEach(c => c.classList.remove('active-card'));
+          entry.target.classList.add('active-card');
+          const idx = parseInt(entry.target.getAttribute('data-index'));
+          const activeChap = STORY.chapters[idx];
+          if (activeChap) {
+            document.getElementById('current-chapter-indicator').innerText = 'Chapter ' + activeChap.chapterNumber + ' Focus';
+            document.getElementById('active-nodes-list').innerText = (activeChap.activeNodes || []).map(n => n.split(':').pop()).join(', ') || 'Global';
+          }
+        }
+      });
+    }, { root: pane, threshold: 0.5 });
+
+    cards.forEach(c => observer.observe(c));
+    if (cards[0]) cards[0].classList.add('active-card');
+    renderDiagram();
+
+    // Attach click listeners to diagram nodes to jump to chapter in exported viewer
+    setTimeout(() => {
+      const svgNodes = document.querySelectorAll('#mermaid-diagram .node');
+      svgNodes.forEach(sn => {
+        sn.style.cursor = 'pointer';
+        sn.addEventListener('click', () => {
+          const text = sn.textContent || '';
+          const matchIdx = STORY.chapters.findIndex(ch =>
+            (ch.activeNodes || []).some(nid => text.includes(nid.split(':').pop() || '') || (nid.split(':').pop() || '').includes(text.trim()))
+          );
+          if (matchIdx !== -1 && cards[matchIdx]) {
+            cards[matchIdx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            cards[matchIdx].classList.add('ring-4', 'ring-indigo-400');
+            setTimeout(() => cards[matchIdx].classList.remove('ring-4', 'ring-indigo-400'), 2000);
+          }
+        });
+      });
+    }, 600);
+  </script>
+</body>
+</html>
