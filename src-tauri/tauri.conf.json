@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "RepoTale — Interactive Codebase Story",
         "width": 1440,
         "height": 900,
