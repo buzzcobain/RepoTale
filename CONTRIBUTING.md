@@ -46,4 +46,5 @@ Thank you for your interest in contributing to **RepoTale**!
 
 - Ensure `npm run build` succeeds without any TypeScript errors.
 - Follow conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
+- Agree to the [Contributor License Agreement (CLA)](./CLA.md) by submitting your PR.
 - Open a PR against the `main` branch.
