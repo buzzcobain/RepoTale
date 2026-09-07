@@ -11,6 +11,19 @@
 
 ---
 
+## 💡 Why RepoTale?
+
+RepoTale was created to solve two major, everyday developer headaches: **the cognitive overload of onboarding into unfamiliar codebases**, and **the friction of writing and maintaining good documentation**.
+
+* 🧠 **Demystifying Complex Codebases:** When developers clone an unfamiliar repository, they are typically hit with hundreds of dense, unstructured files and minimal setup guides. RepoTale digests the repository's AST and architecture to present an intuitive, interactive story of how the system actually works—from entry points to business logic and data flow.
+* 🗺️ **Visual, Step-by-Step Exploration:** Instead of dumping flat markdown or wall-of-text documentation, RepoTale pairs chapter-driven narrative cards with an interactive visual code graph. As you scroll through functional chapters, the graph dynamically illuminates connecting functions and zooms in on relevant code paths.
+* 💬 **Context-Aware Architectural Q&A:** Static documentation cannot answer ad-hoc questions. RepoTale includes a built-in, local-first conversational sidecar where developers can ask specific architectural questions and receive grounded answers with direct file and line references.
+* ✍️ **Automating the Documentation Chore:** Developers hate writing docs. Once you finish exploring a walkthrough, RepoTale can automatically commit a rich `README.md` (with native Mermaid diagrams and expandable chapters) or emit an interactive standalone web viewer directly to `/docs` for zero-config GitHub Pages hosting.
+* 🛡️ **Local-First & Privacy by Default:** Designed to run 100% locally on your machine with local models (e.g. Ollama) without leaking private source code to third-party servers, while retaining the flexibility to connect to frontier cloud models (Gemini, Claude, GPT-4o) via user-provided API keys (BYOK).
+* 🔁 **A Self-Sustaining Community Loop:** By embedding the official RepoTale badge into generated README files, every documented repository introduces new developers to interactive code exploration, creating an organic discovery loop across GitHub.
+
+---
+
 ## 🌟 Key Architecture & Features
 
 ### 1. Sandboxed Ingestion & Tree-Sitter AST Parser (Rust / Tauri v2)
@@ -130,6 +143,9 @@ export interface RepoTaleStory {
 ## 🤝 Contributing & Community
 
 Contributions are warmly welcomed! RepoTale is an open-source community effort.
+
+> **Branching Model:** We follow **GitHub Flow**. All features, bug fixes, and documentation improvements should be developed on topic branches (e.g., `feat/my-feature`, `fix/issue-description`) and submitted via pull requests targeting `main`.
+
 * **[Contributing Guide](./CONTRIBUTING.md)**: Setup, branch conventions, and workflow.
 * **[Code of Conduct](./CODE_OF_CONDUCT.md)**: Community standards and pledge.
 * **[Contributor License Agreement (CLA)](./CLA.md)**: IP protection for contributors and users.
