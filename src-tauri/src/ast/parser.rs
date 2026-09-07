@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::fs;
 use walkdir::WalkDir;
-use tree_sitter::{Parser, Query, QueryCursor};
+use tree_sitter::{Language, Parser, Query, QueryCursor};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AstSymbol {
@@ -52,13 +52,16 @@ pub struct RepoAstParser {
 impl RepoAstParser {
     pub fn new() -> Self {
         let mut ts_parser = Parser::new();
-        let _ = ts_parser.set_language(&tree_sitter_typescript::language_typescript());
+        let ts_lang: Language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
+        let _ = ts_parser.set_language(&ts_lang);
 
         let mut python_parser = Parser::new();
-        let _ = python_parser.set_language(&tree_sitter_python::language());
+        let py_lang: Language = tree_sitter_python::LANGUAGE.into();
+        let _ = python_parser.set_language(&py_lang);
 
         let mut rust_parser = Parser::new();
-        let _ = rust_parser.set_language(&tree_sitter_rust::language());
+        let rs_lang: Language = tree_sitter_rust::LANGUAGE.into();
+        let _ = rust_parser.set_language(&rs_lang);
 
         Self {
             ts_parser,
@@ -163,8 +166,8 @@ impl RepoAstParser {
             (method_definition name: (property_identifier) @method.name) @method.def
             (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @var.name))) @var.def
         "#;
-
-        if let Ok(query) = Query::new(&tree_sitter_typescript::language_typescript(), query_str) {
+        let lang: Language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
+        if let Ok(query) = Query::new(&lang, query_str) {
             let mut cursor = QueryCursor::new();
             let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
 
@@ -226,8 +229,8 @@ impl RepoAstParser {
             (function_definition name: (identifier) @fn.name) @fn.def
             (class_definition name: (identifier) @class.name) @class.def
         "#;
-
-        if let Ok(query) = Query::new(&tree_sitter_python::language(), query_str) {
+        let lang: Language = tree_sitter_python::LANGUAGE.into();
+        if let Ok(query) = Query::new(&lang, query_str) {
             let mut cursor = QueryCursor::new();
             let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
 
@@ -281,8 +284,8 @@ impl RepoAstParser {
             (struct_item name: (type_identifier) @struct.name) @struct.def
             (enum_item name: (type_identifier) @enum.name) @enum.def
         "#;
-
-        if let Ok(query) = Query::new(&tree_sitter_rust::language(), query_str) {
+        let lang: Language = tree_sitter_rust::LANGUAGE.into();
+        if let Ok(query) = Query::new(&lang, query_str) {
             let mut cursor = QueryCursor::new();
             let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
 

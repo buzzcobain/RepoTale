@@ -70,7 +70,7 @@ pub fn generate_markdown_readme(story_json_str: &str, github_user: &str, repo_na
     for edge in edges {
         let src = edge["source"].as_str().unwrap_or("").replace([':', '/', '.', '-'], "_");
         let tgt = edge["target"].as_str().unwrap_or("").replace([':', '/', '.', '-'], "_");
-        if let Some(lbl) = edge["label"].and_then(|v| v.as_str()) {
+        if let Some(lbl) = edge["label"].as_str() {
             md.push_str(&format!("    {} -->|\"{}\"| {}\n", src, lbl, tgt));
         } else {
             md.push_str(&format!("    {} --> {}\n", src, tgt));

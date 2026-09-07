@@ -23,7 +23,7 @@ pub struct InferenceEstimate {
     pub estimated_cost_usd: f64,
 }
 
-pub fn estimate_inference_cost(provider: &str, model: &str, prompt_len: usize) -> InferenceEstimate {
+pub fn estimate_inference_cost(provider: &str, _model: &str, prompt_len: usize) -> InferenceEstimate {
     let tokens = prompt::estimate_tokens(&prompt_len.to_string()) + (prompt_len / 4);
     let cost = match provider {
         "ollama" => 0.0,
