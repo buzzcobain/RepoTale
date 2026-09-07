@@ -49,6 +49,8 @@ export interface ExportOptions {
   generateStaticHtml: boolean;
   githubUsername?: string;
   repositoryName?: string;
+  updateReadme?: boolean;
+  pushToRemote?: boolean;
 }
 
 export interface ExportResult {
@@ -56,6 +58,9 @@ export interface ExportResult {
   staticHtmlContent?: string;
   savedPath?: string;
   branchName?: string;
+  pushedToRemote?: boolean;
+  prUrl?: string;
+  gitError?: string;
 }
 
 export interface IngestionProgress {

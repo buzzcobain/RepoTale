@@ -11,30 +11,47 @@ interface RepoIngestionModalProps {
 }
 
 export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, onClose }) => {
-  const { ingestRepo, isIngesting, ingestionProgress } = useStory();
+  const { story, ingestRepo, isIngesting, ingestionProgress } = useStory();
   const { settings, getKey } = useSettings();
 
   const [sourceType, setSourceType] = useState<'github' | 'local'>('github');
-  const [urlOrPath, setUrlOrPath] = useState('tiangolo/fastapi');
+  const [urlOrPath, setUrlOrPath] = useState(story?.meta?.repoName || 'tiangolo/fastapi');
   const [provider, setProvider] = useState<LLMProvider>(settings.defaultProvider);
   const [selectedModelId, setSelectedModelId] = useState<string>(settings.selectedModel);
   const [ollamaStatus, setOllamaStatus] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Check Ollama status
+  // Sync with active story on modal open
   useEffect(() => {
-    if (provider === 'ollama') {
-      checkOllamaHealth(settings.ollamaBaseUrl)
-        .then((models) => {
-          if (models.length > 0) {
-            setOllamaStatus(`Found ${models.length} local models`);
-          } else {
-            setOllamaStatus('No local models found');
-          }
-        })
-        .catch(() => setOllamaStatus('Ollama not running'));
+    if (isOpen && story?.meta?.repoName) {
+      setUrlOrPath(story.meta.repoName);
     }
-  }, [provider, settings.ollamaBaseUrl]);
+  }, [isOpen, story?.meta?.repoName]);
+
+  // Check Ollama status and auto-suggest if available
+  useEffect(() => {
+    checkOllamaHealth(settings.ollamaBaseUrl)
+      .then((models) => {
+        if (models.length > 0) {
+          setOllamaStatus(`Found ${models.length} local models`);
+          getKey('gemini').then(key => {
+            if (!key) {
+              setProvider('ollama');
+              if (models.includes('qwen2.5-coder:14b')) {
+                setSelectedModelId('qwen2.5-coder:14b');
+              } else if (models.includes('llama3.2:latest')) {
+                setSelectedModelId('llama3.2:latest');
+              } else if (models.includes('qwen2.5-coder:1.5b')) {
+                setSelectedModelId('qwen2.5-coder:1.5b');
+              }
+            }
+          });
+        } else {
+          setOllamaStatus('No local models found');
+        }
+      })
+      .catch(() => setOllamaStatus('Ollama not running'));
+  }, [settings.ollamaBaseUrl]);
 
   // Cost estimation (approx 12,000 chars AST context)
   const costEstimate = estimateStoryCost(selectedModelId, 12000);
@@ -43,24 +60,24 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
     { label: 'tiangolo/fastapi', desc: 'Python ASGI & Pydantic' },
     { label: 'tauri-apps/tauri', desc: 'Rust Desktop & Wry' },
     { label: 'expressjs/express', desc: 'Node.js Web Router' },
+    { label: 'buzzcobain/RepoTale', desc: 'Tauri v2 + React TypeScript' },
     { label: 'trpc/trpc', desc: 'End-to-end TypeScript' },
   ];
 
-  const handleIngest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!urlOrPath.trim()) return;
+  const executeIngest = async (targetRepo: string) => {
+    if (!targetRepo.trim()) return;
     setErrorMsg(null);
 
     try {
       const apiKey = await getKey(provider);
       if (provider !== 'ollama' && !apiKey) {
-        setErrorMsg(`API Key required for ${provider.toUpperCase()}. Please configure it in Settings or select Ollama.`);
+        setErrorMsg(`API Key required for ${provider.toUpperCase()}. Please configure it in Settings or select Local Tier (Ollama).`);
         return;
       }
 
       await ingestRepo({
         sourceType,
-        urlOrPath: urlOrPath.trim(),
+        urlOrPath: targetRepo.trim(),
         provider,
         modelName: selectedModelId,
         apiKey,
@@ -70,6 +87,11 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
     } catch (err: any) {
       setErrorMsg(err?.message || 'Ingestion failed');
     }
+  };
+
+  const handleIngest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeIngest(urlOrPath);
   };
 
   if (!isOpen) return null;
@@ -181,17 +203,35 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
 
               {/* Presets */}
               {sourceType === 'github' && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {presets.map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => setUrlOrPath(preset.label)}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors font-mono"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Popular Repositories & Presets</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Click to choose</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {presets.map((preset) => {
+                      const isSelected =
+                        urlOrPath.toLowerCase() === preset.label.toLowerCase() ||
+                        urlOrPath.toLowerCase().includes(preset.label.toLowerCase().split('/')[1]);
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setUrlOrPath(preset.label)}
+                          onDoubleClick={() => executeIngest(preset.label)}
+                          title="Click to select, double-click to ingest immediately"
+                          className={`p-2 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-indigo-600/25 border-indigo-500 ring-1 ring-indigo-500/50 text-white shadow-sm'
+                              : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800 hover:border-slate-700 text-slate-300'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold font-mono truncate">{preset.label}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{preset.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -259,9 +299,29 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
                 </button>
               </div>
 
+              {/* Apple Silicon Hardware Detection Banner */}
+              {provider === 'ollama' && (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-indigo-500/30 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2 text-indigo-300 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Apple M5 Pro • 48 GB Unified Memory</span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[10px] bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    Max: 32B Q8 / 70B Q3
+                  </span>
+                </div>
+              )}
+
               {/* Model Dropdown */}
               <div className="space-y-1.5">
-                <label className="text-[11px] text-slate-400">Selected Model</label>
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <label>Selected Model</label>
+                  {provider === 'ollama' && selectedModelId === 'qwen2.5-coder:32b' && (
+                    <span className="text-indigo-400 text-[10px] font-mono">
+                      Pull with: ollama pull qwen2.5-coder:32b
+                    </span>
+                  )}
+                </div>
                 <select
                   value={selectedModelId}
                   onChange={(e) => setSelectedModelId(e.target.value)}
@@ -271,7 +331,7 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
                     provider === 'ollama' ? m.tier === 'local' : m.tier === 'cloud'
                   ).map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.name} {m.recommended ? '★ (Recommended)' : ''}
+                      {m.name} {m.recommended ? '★' : ''}
                     </option>
                   ))}
                 </select>
@@ -298,7 +358,7 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
               className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Launch AST Parsing & Storytelling</span>
+              <span>Launch AST Parsing & Storytelling for <span className="font-mono underline decoration-indigo-300 underline-offset-2">{urlOrPath.trim() || 'Repository'}</span></span>
             </button>
           </form>
         )}

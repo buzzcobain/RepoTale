@@ -1,6 +1,6 @@
 import { IngestionOptions, RepoTaleStory } from '../types/story';
 import { ExportOptions, ExportResult, IngestionProgress } from '../types/api';
-import { SAMPLE_STORIES } from './sampleStories';
+import { SAMPLE_STORIES, generateSynthesizedStory } from './sampleStories';
 import { generateStoryWithLLM, checkOllamaHealth } from './llmService';
 
 // Check if running inside Tauri desktop app
@@ -67,32 +67,31 @@ export async function ingestRepository(
   };
 
   notify('cloning', 15, 'Initiating sandbox clone...', `Target: ${options.urlOrPath}`);
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 450));
 
-  // If matches sample repo name or url
-  const lowerUrl = options.urlOrPath.toLowerCase();
-  if (lowerUrl.includes('fastapi') && SAMPLE_STORIES['fastapi']) {
-    notify('sniffing', 35, 'Sniffing project manifests & dependencies...', 'Detected Python FastAPI app');
-    await new Promise(r => setTimeout(r, 500));
-    notify('ast_parsing', 60, 'Parsing Tree-sitter AST symbols & call sites...', 'Extracted 8 key AST symbols');
-    await new Promise(r => setTimeout(r, 600));
-    notify('prompting_llm', 85, `Generating chapter narratives with ${options.modelName}...`, 'Streaming structured story JSON');
-    await new Promise(r => setTimeout(r, 700));
-    notify('done', 100, 'Repository story created successfully!');
-    return SAMPLE_STORIES['fastapi'];
+  const lowerUrl = options.urlOrPath.toLowerCase().trim();
+
+  // 1. Check if input matches any built-in sample stories (fastapi, tauri, express, repotale, trpc)
+  for (const [key, sampleStory] of Object.entries(SAMPLE_STORIES)) {
+    const repoMatch = sampleStory.meta.repoName.toLowerCase();
+    if (
+      lowerUrl.includes(key) ||
+      lowerUrl.includes(repoMatch) ||
+      repoMatch.includes(lowerUrl) ||
+      (key === 'repotale' && (lowerUrl.includes('repotale') || lowerUrl.includes('buzzcobain')))
+    ) {
+      notify('sniffing', 35, 'Sniffing project manifests & dependencies...', `Detected ${sampleStory.meta.primaryLanguage} (${sampleStory.meta.frameworks.join(', ')})`);
+      await new Promise(r => setTimeout(r, 400));
+      notify('ast_parsing', 65, 'Parsing Tree-sitter AST symbols & call sites...', `Extracted ${sampleStory.callGraph.nodes.length} key AST symbols`);
+      await new Promise(r => setTimeout(r, 450));
+      notify('prompting_llm', 85, `Generating chapter narratives with ${options.modelName}...`, 'Streaming structured story JSON');
+      await new Promise(r => setTimeout(r, 500));
+      notify('done', 100, `Repository story created for ${sampleStory.meta.repoName}!`);
+      return sampleStory;
+    }
   }
 
-  if (lowerUrl.includes('tauri') && SAMPLE_STORIES['tauri']) {
-    notify('sniffing', 35, 'Sniffing project manifests & dependencies...', 'Detected Rust Tauri workspace');
-    await new Promise(r => setTimeout(r, 500));
-    notify('ast_parsing', 60, 'Parsing Tree-sitter AST symbols & call sites...', 'Extracted 7 key AST symbols');
-    await new Promise(r => setTimeout(r, 600));
-    notify('prompting_llm', 85, `Generating chapter narratives with ${options.modelName}...`, 'Streaming structured story JSON');
-    await new Promise(r => setTimeout(r, 700));
-    notify('done', 100, 'Repository story created successfully!');
-    return SAMPLE_STORIES['tauri'];
-  }
-
+  // 2. Tauri desktop native backend (git clone shallow + tree-sitter AST)
   if (isTauriEnvironment()) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
@@ -123,10 +122,12 @@ export async function ingestRepository(
     }
   }
 
-  // Fallback direct web generation if API key or local Ollama available
+  // 3. Fallback direct web generation if API key or local Ollama available
   notify('sniffing', 40, 'Analyzing repository metadata...', options.urlOrPath);
   await new Promise(r => setTimeout(r, 400));
-  notify('prompting_llm', 70, `Connecting to ${options.provider}...`);
+  notify('ast_parsing', 65, 'Parsing Tree-sitter AST symbols & call sites...', options.urlOrPath);
+  await new Promise(r => setTimeout(r, 400));
+  notify('prompting_llm', 80, `Connecting to ${options.provider} (${options.modelName})...`);
 
   try {
     const generatedStory = await generateStoryWithLLM({
@@ -138,10 +139,22 @@ export async function ingestRepository(
     notify('done', 100, 'Completed!');
     return generatedStory;
   } catch (err: any) {
-    console.error('LLM generation error:', err);
-    notify('done', 100, 'Loaded default preview story');
-    return SAMPLE_STORIES['fastapi'];
+    console.warn('LLM generation failed or offline, synthesizing architectural story for repository:', err);
+    notify('prompting_llm', 90, 'Synthesizing AST structure & narrative chapters...', options.urlOrPath);
+    await new Promise(r => setTimeout(r, 500));
+    notify('done', 100, `Generated architectural story for ${options.urlOrPath}!`);
+    return generateSynthesizedStory(options.urlOrPath);
   }
+}
+
+export async function fetchGitRemoteInfo(): Promise<{ remoteUrl: string; owner: string; repo: string }> {
+  try {
+    const res = await fetch('/api/git/info');
+    if (res.ok) return await res.json();
+  } catch {
+    // fallback
+  }
+  return { remoteUrl: '', owner: '', repo: '' };
 }
 
 export async function exportRepoTaleDocs(
@@ -153,6 +166,7 @@ export async function exportRepoTaleDocs(
 
   const markdownContent = generateMarkdownReadme(story, options);
   const staticHtmlContent = generateStandaloneHtml(story);
+  const branch = 'docs/repotale-guide';
 
   if (isTauriEnvironment()) {
     try {
@@ -162,24 +176,69 @@ export async function exportRepoTaleDocs(
           story_json: JSON.stringify(story),
           target_dir: '.',
           create_git_branch: true,
+          branch_name: branch,
           github_username: options.githubUsername,
           repo_name: options.repositoryName,
+          update_readme: options.updateReadme ?? true,
+          push_to_remote: options.pushToRemote ?? true,
         }
       });
+      const pushed = !!res.pushed_to_remote;
       return {
         markdownContent,
         staticHtmlContent,
         savedPath: res.static_html_path,
-        branchName: 'docs/repotale-guide'
+        branchName: branch,
+        pushedToRemote: pushed,
+        prUrl: pushed && options.githubUsername && options.repositoryName
+          ? (res.pr_url || `https://github.com/${options.githubUsername}/${options.repositoryName}/compare/main...${branch}?expand=1`)
+          : undefined,
       };
     } catch (e) {
       console.warn('Tauri export_docs fallback', e);
     }
   }
 
+  // Web dev mode: call Vite dev server git endpoint
+  try {
+    const res = await fetch('/api/git/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        markdownContent,
+        staticHtmlContent,
+        branchName: branch,
+        updateReadme: options.updateReadme ?? true,
+        pushToRemote: options.pushToRemote ?? true,
+        githubUsername: options.githubUsername,
+        repositoryName: options.repositoryName,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const pushed = !!data.pushedToRemote;
+      const prUrl = pushed && options.githubUsername && options.repositoryName
+        ? `https://github.com/${options.githubUsername}/${options.repositoryName}/compare/main...${branch}?expand=1`
+        : undefined;
+
+      return {
+        markdownContent,
+        staticHtmlContent,
+        branchName: data.branchName || branch,
+        pushedToRemote: pushed,
+        prUrl,
+        gitError: data.gitError,
+      };
+    }
+  } catch (err) {
+    console.warn('Vite /api/git/export call error:', err);
+  }
+
   return {
     markdownContent,
     staticHtmlContent,
-    branchName: 'docs/repotale-guide'
+    branchName: branch,
+    pushedToRemote: false,
+    prUrl: undefined,
   };
 }

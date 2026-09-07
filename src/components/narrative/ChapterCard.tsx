@@ -61,6 +61,24 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
         ))}
       </div>
 
+      {/* Focused Node Banner if selected from diagram */}
+      {selectedNodeId && (chapter.activeNodes.includes(selectedNodeId) || chapter.codeSnippets.some(s => selectedNodeId.includes(s.filePath))) && (
+        <div className="mb-4 p-3 rounded-xl bg-indigo-950/80 border border-indigo-400/50 flex items-center justify-between text-xs text-indigo-200 animate-pulse">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            <span>
+              Explaining diagram symbol: <strong className="font-mono text-white underline">{selectedNodeId.split(':').pop()}</strong>
+            </span>
+          </div>
+          <button
+            onClick={() => selectNode(null)}
+            className="text-[11px] px-2 py-0.5 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-700"
+          >
+            Reset focus
+          </button>
+        </div>
+      )}
+
       {/* Active Symbols / Nodes Pills */}
       {chapter.activeNodes.length > 0 && (
         <div className="mb-4">
@@ -94,9 +112,19 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
       {/* Code Snippets List */}
       {chapter.codeSnippets.length > 0 && (
         <div className="space-y-4 pt-2">
-          {chapter.codeSnippets.map((snip, sIdx) => (
-            <CodeSnippetBlock key={sIdx} snippet={snip} />
-          ))}
+          {chapter.codeSnippets.map((snip, sIdx) => {
+            const isSnippetHighlighted = !!selectedNodeId && (
+              selectedNodeId.includes(snip.filePath) ||
+              snip.code.includes(selectedNodeId.split(':').pop() || '')
+            );
+            return (
+              <CodeSnippetBlock
+                key={sIdx}
+                snippet={snip}
+                isHighlighted={isSnippetHighlighted}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -90,29 +90,73 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RepoTale — ${story.meta.repoName}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     pre, code { font-family: 'Fira Code', monospace; }
-    .active-card { border-color: #6366f1 !important; box-shadow: 0 0 30px rgba(99, 102, 241, 0.25); transform: translateY(-2px); }
+    .active-card {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 35px rgba(99, 102, 241, 0.35);
+      transform: translateY(-2px);
+    }
+    .dot-grid {
+      background-color: #030712;
+      background-image: radial-gradient(circle, #334155 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+    .node-card {
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.25s ease;
+    }
+    .node-card.active-node {
+      opacity: 1 !important;
+      border-color: #818cf8 !important;
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.45), 0 12px 24px -6px rgba(0, 0, 0, 0.6) !important;
+      transform: scale(1.03);
+      z-index: 30 !important;
+    }
+    .node-card.inactive-node {
+      opacity: 0.55;
+    }
+    .node-card.inactive-node:hover {
+      opacity: 1;
+      transform: scale(1.02);
+      z-index: 25;
+    }
+    .edge-line {
+      fill: none;
+      stroke: #475569;
+      stroke-width: 2;
+      transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
+    }
+    .edge-line.active-edge {
+      stroke: #818cf8;
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.7));
+      stroke-dasharray: 6 4;
+      animation: edgeFlow 1.2s linear infinite;
+    }
+    @keyframes edgeFlow {
+      from { stroke-dashoffset: 20; }
+      to { stroke-dashoffset: 0; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
-  <!-- Top Navigation Header -->
+  <!-- Header -->
   <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30 text-sm">
         🧭
       </div>
       <div>
         <h1 class="font-bold text-base text-white flex items-center gap-2">
           ${story.meta.repoName}
-          <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/50">${story.meta.primaryLanguage}</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-700/50 font-mono">${story.meta.primaryLanguage}</span>
         </h1>
-        <p class="text-xs text-slate-400 truncate max-w-md">${story.meta.description || 'Interactive Architecture Tour'}</p>
+        <p class="text-xs text-slate-400 truncate max-w-md">${story.meta.description || 'Interactive Architecture Walkthrough'}</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -126,42 +170,90 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <!-- Split Screen Viewer -->
   <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
     <!-- Left Narrative Pane -->
-    <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80">
+    <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80 scroll-smooth">
       <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-xl">
         <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Interactive Architectural Story</h2>
-        <p class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system lifecycle and call graph below.'}</p>
+        <p class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
         <div class="mt-4 flex flex-wrap gap-2 text-xs">
           <span class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: ${story.meta.entryPoint}</span>
           ${(story.meta.frameworks || []).map(f => `<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">${f}</span>`).join('')}
         </div>
       </div>
 
-      <!-- Chapters Feed -->
+      <!-- Chapters List -->
       <div id="chapters-list" class="space-y-8"></div>
     </div>
 
     <!-- Right Dynamic Graph Canvas -->
-    <div class="lg:col-span-6 sticky top-[65px] h-[calc(100vh-65px)] bg-slate-900/40 p-6 flex flex-col justify-between overflow-hidden">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+    <div class="lg:col-span-6 sticky top-[65px] h-[calc(100vh-65px)] flex flex-col justify-between overflow-hidden bg-slate-950 relative select-none">
+      <!-- Top Graph Bar -->
+      <div class="px-5 py-3 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md flex items-center justify-between z-20 shrink-0">
         <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <h2 class="text-xs font-bold tracking-wider uppercase text-slate-300">Live Architecture Graph</h2>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-slate-200">Interactive Architecture Graph</h2>
         </div>
-        <span id="current-chapter-indicator" class="text-xs font-mono text-indigo-400">Chapter 1 Focus</span>
+        <span id="current-chapter-indicator" class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-1 rounded-md border border-indigo-800/50">
+          Chapter 1 Focus
+        </span>
       </div>
 
-      <!-- Mermaid Flow Container -->
-      <div class="flex-1 flex items-center justify-center p-4 overflow-auto">
-        <div id="mermaid-diagram" class="mermaid w-full"></div>
+      <!-- Floating Controls -->
+      <div class="absolute top-16 right-5 z-30 flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md shadow-2xl text-xs">
+        <button id="btn-zoom-in" title="Zoom In" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center justify-center font-bold text-base transition-colors">+</button>
+        <button id="btn-zoom-out" title="Zoom Out" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center justify-center font-bold text-base transition-colors">−</button>
+        <button id="btn-fit" title="Fit to Screen" class="px-2.5 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-1 font-mono text-[11px] transition-colors">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          <span>Fit</span>
+        </button>
+        <div class="h-4 w-[1px] bg-slate-800 mx-0.5"></div>
+        <button id="btn-dir" title="Toggle Layout Direction (TB: Top-Bottom / LR: Left-Right)" class="px-2.5 h-7 rounded-lg hover:bg-slate-800 text-indigo-300 font-mono text-[11px] flex items-center gap-1 transition-colors">
+          <span id="dir-label">TB</span>
+        </button>
       </div>
 
-      <!-- Active Focus Footer -->
-      <div class="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 shadow-lg flex items-center justify-between text-xs">
-        <div class="flex items-center gap-2 text-slate-300">
-          <span class="font-semibold text-white">Active Nodes:</span>
-          <span id="active-nodes-list" class="font-mono text-indigo-300">Loading...</span>
+      <!-- Interactive Canvas Viewport -->
+      <div id="graph-viewport" class="flex-1 relative dot-grid overflow-hidden cursor-grab active:cursor-grabbing">
+        <div id="graph-surface" class="absolute inset-0 origin-top-left will-change-transform">
+          <!-- SVG Edges Layer -->
+          <svg id="graph-edges-svg" class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="min-width: 3000px; min-height: 3000px;">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+              </marker>
+              <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#818cf8" />
+              </marker>
+            </defs>
+            <g id="edges-group"></g>
+          </svg>
+
+          <!-- HTML Nodes Layer -->
+          <div id="graph-nodes-layer" class="absolute inset-0 pointer-events-auto" style="min-width: 3000px; min-height: 3000px;"></div>
         </div>
-        <span class="text-slate-500 text-[11px]">Scroll to change focus</span>
+
+        <!-- Legend Pill (Bottom Left) -->
+        <div class="absolute bottom-4 left-4 z-30 hidden sm:flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-[10px] text-slate-300 font-medium shadow-lg">
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span><span>Entry</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Middleware</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span>Service</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Data</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400"></span><span>Utility</span></div>
+        </div>
+
+        <!-- Minimap (Bottom Right) -->
+        <div id="minimap-container" class="absolute bottom-4 right-4 z-30 w-36 h-24 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-md overflow-hidden shadow-2xl hidden md:block">
+          <svg id="minimap-svg" class="w-full h-full"></svg>
+          <div id="minimap-viewport" class="absolute border border-indigo-400 bg-indigo-500/15 pointer-events-none rounded transition-all duration-75"></div>
+        </div>
+      </div>
+
+      <!-- Active Focus Footer Bar -->
+      <div class="p-3.5 bg-slate-900/90 border-t border-slate-800 shadow-lg flex items-center justify-between text-xs z-20 shrink-0">
+        <div class="flex items-center gap-2 text-slate-300 truncate mr-2">
+          <span class="font-semibold text-white">Active Focus:</span>
+          <span id="active-nodes-list" class="font-mono text-indigo-300 truncate">Loading...</span>
+        </div>
+        <span class="text-slate-500 text-[11px] shrink-0">Click any node to jump to story</span>
       </div>
     </div>
   </main>
@@ -169,60 +261,492 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <script>
     const STORY = ${jsonState};
 
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'dark',
-      themeVariables: {
-        darkMode: true,
-        primaryColor: '#6366f1',
-        primaryTextColor: '#f8fafc',
-        primaryBorderColor: '#4f46e5',
-        lineColor: '#818cf8',
-        secondaryColor: '#1e293b',
-        tertiaryColor: '#0f172a'
+    const typeConfig = {
+      entry: {
+        bg: 'bg-sky-950/70',
+        border: 'border-sky-500/40',
+        badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+        badgeText: 'Entrypoint',
+        color: '#38bdf8',
+        iconSvg: '<svg class="w-3.5 h-3.5 text-sky-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      },
+      middleware: {
+        bg: 'bg-amber-950/70',
+        border: 'border-amber-500/40',
+        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        badgeText: 'Middleware',
+        color: '#fbbf24',
+        iconSvg: '<svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+      },
+      service: {
+        bg: 'bg-indigo-950/70',
+        border: 'border-indigo-500/40',
+        badgeBg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        badgeText: 'Service',
+        color: '#818cf8',
+        iconSvg: '<svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>'
+      },
+      data: {
+        bg: 'bg-emerald-950/70',
+        border: 'border-emerald-500/40',
+        badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        badgeText: 'Data/Store',
+        color: '#34d399',
+        iconSvg: '<svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'
+      },
+      utility: {
+        bg: 'bg-slate-900/80',
+        border: 'border-slate-700/60',
+        badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+        badgeText: 'Utility',
+        color: '#94a3b8',
+        iconSvg: '<svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
       }
-    });
+    };
 
     function escapeHtml(text) {
       return (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // Build Mermaid
-    function renderDiagram() {
-      let code = 'flowchart TD\\n';
-      (STORY.callGraph.nodes || []).forEach(n => {
-        const id = n.id.replace(/[:/.-]/g, '_');
-        const label = n.label.replace(/"/g, "'");
-        code += '  ' + id + '["' + label + '"]\\n';
-      });
-      (STORY.callGraph.edges || []).forEach(e => {
-        const s = e.source.replace(/[:/.-]/g, '_');
-        const t = e.target.replace(/[:/.-]/g, '_');
-        if (e.label) {
-          code += '  ' + s + ' -->|"' + e.label + '"| ' + t + '\\n';
+    let currentDirection = 'TB';
+    let layoutNodes = [];
+    let layoutEdges = [];
+    let activeNodeIds = new Set();
+    let selectedNodeId = null;
+
+    // Viewport transform state
+    const transform = { x: 40, y: 40, k: 0.85 };
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    const viewport = document.getElementById('graph-viewport');
+    const surface = document.getElementById('graph-surface');
+    const edgesGroup = document.getElementById('edges-group');
+    const nodesLayer = document.getElementById('graph-nodes-layer');
+
+    function applyTransform(smooth = false) {
+      if (smooth) {
+        surface.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+        setTimeout(() => { surface.style.transition = ''; }, 450);
+      }
+      surface.style.transform = \`translate(\${transform.x}px, \${transform.y}px) scale(\${transform.k})\`;
+      updateMinimap();
+    }
+
+    // Compute Graph Layout (Dagre + Tiered Fallback)
+    function computeLayout(dir = 'TB') {
+      const rawNodes = STORY.callGraph.nodes || [];
+      const rawEdges = STORY.callGraph.edges || [];
+      const nodeWidth = 240;
+      const nodeHeight = 90;
+
+      if (typeof dagre !== 'undefined' && dagre.graphlib) {
+        const g = new dagre.graphlib.Graph();
+        g.setGraph({ rankdir: dir, nodesep: 50, ranksep: 75, marginx: 40, marginy: 40 });
+        g.setDefaultEdgeLabel(() => ({}));
+        rawNodes.forEach(n => g.setNode(n.id, { width: nodeWidth, height: nodeHeight }));
+        rawEdges.forEach(e => g.setEdge(e.source, e.target));
+        dagre.layout(g);
+
+        layoutNodes = rawNodes.map(n => {
+          const pos = g.node(n.id) || { x: 200, y: 200 };
+          return {
+            ...n,
+            width: nodeWidth,
+            height: nodeHeight,
+            x: pos.x - nodeWidth / 2,
+            y: pos.y - nodeHeight / 2,
+          };
+        });
+      } else {
+        // Fallback tiered grid layout
+        const tiers = { entry: 0, middleware: 1, service: 2, data: 3, utility: 4 };
+        const buckets = [[], [], [], [], []];
+        rawNodes.forEach(n => {
+          const t = tiers[n.type] ?? 2;
+          buckets[t].push(n);
+        });
+
+        layoutNodes = [];
+        buckets.forEach((bucket, tierIdx) => {
+          const total = bucket.length;
+          bucket.forEach((node, colIdx) => {
+            const x = dir === 'TB' ? (colIdx - (total - 1) / 2) * 280 + 350 : tierIdx * 320 + 80;
+            const y = dir === 'TB' ? tierIdx * 160 + 80 : (colIdx - (total - 1) / 2) * 140 + 300;
+            layoutNodes.push({ ...node, x, y, width: nodeWidth, height: nodeHeight });
+          });
+        });
+      }
+
+      layoutEdges = rawEdges;
+    }
+
+    // Render Canvas
+    function renderGraph() {
+      // 1. Render Edges (Curved Bezier Paths)
+      let svgHtml = '';
+      layoutEdges.forEach(edge => {
+        const s = layoutNodes.find(n => n.id === edge.source);
+        const t = layoutNodes.find(n => n.id === edge.target);
+        if (!s || !t) return;
+
+        let sx, sy, tx, ty, c1x, c1y, c2x, c2y;
+        if (currentDirection === 'TB') {
+          sx = s.x + s.width / 2;
+          sy = s.y + s.height;
+          tx = t.x + t.width / 2;
+          ty = t.y;
+          const dy = Math.max(30, (ty - sy) / 2);
+          c1x = sx;
+          c1y = sy + dy;
+          c2x = tx;
+          c2y = ty - dy;
         } else {
-          code += '  ' + s + ' --> ' + t + '\\n';
+          sx = s.x + s.width;
+          sy = s.y + s.height / 2;
+          tx = t.x;
+          ty = t.y + t.height / 2;
+          const dx = Math.max(30, (tx - sx) / 2);
+          c1x = sx + dx;
+          c1y = sy;
+          c2x = tx - dx;
+          c2y = ty;
+        }
+
+        const pathD = \`M \${sx} \${sy} C \${c1x} \${c1y}, \${c2x} \${c2y}, \${tx} \${ty}\`;
+        const isActiveEdge = (activeNodeIds.has(edge.source) || Array.from(activeNodeIds).some(id => id.split(':').pop() === edge.source.split(':').pop())) &&
+          (activeNodeIds.has(edge.target) || Array.from(activeNodeIds).some(id => id.split(':').pop() === edge.target.split(':').pop()));
+        const edgeClass = isActiveEdge ? 'edge-line active-edge' : 'edge-line';
+        const marker = isActiveEdge ? 'url(#arrow-active)' : 'url(#arrow)';
+
+        svgHtml += \`<path d="\${pathD}" class="\${edgeClass}" marker-end="\${marker}" data-edge-source="\${escapeHtml(edge.source)}" data-edge-target="\${escapeHtml(edge.target)}" />\`;
+
+        // Optional Edge Label Badge
+        if (edge.label) {
+          const mx = (sx + tx) / 2;
+          const my = (sy + ty) / 2;
+          svgHtml += \`
+            <foreignObject x="\${mx - 60}" y="\${my - 12}" width="120" height="24" class="overflow-visible pointer-events-none">
+              <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center justify-center">
+                <span class="px-2 py-0.5 rounded-full bg-slate-950/95 border border-slate-700/80 text-[10px] font-mono text-slate-300 shadow-md truncate max-w-[110px]">
+                  \${escapeHtml(edge.label)}
+                </span>
+              </div>
+            </foreignObject>
+          \`;
         }
       });
-      const container = document.getElementById('mermaid-diagram');
-      container.innerHTML = code;
-      mermaid.run({ nodes: [container] });
+      edgesGroup.innerHTML = svgHtml;
+
+      // 2. Render Nodes
+      let nodesHtml = '';
+      layoutNodes.forEach(node => {
+        const style = typeConfig[node.type] || typeConfig.utility;
+        const isActive = activeNodeIds.has(node.id);
+        const isSelected = selectedNodeId === node.id;
+        const cardStateClass = isSelected
+          ? 'ring-2 ring-indigo-400 border-indigo-400 scale-[1.03] active-node'
+          : isActive
+          ? 'active-node'
+          : 'inactive-node';
+
+        nodesHtml += \`
+          <div
+            id="node-\${CSS.escape(node.id)}"
+            data-node-id="\${escapeHtml(node.id)}"
+            class="node-card absolute w-[240px] rounded-xl p-3.5 backdrop-blur-md cursor-pointer select-none shadow-xl border \${style.bg} \${style.border} \${cardStateClass}"
+            style="left: \${node.x}px; top: \${node.y}px;"
+          >
+            <!-- Port Handles -->
+            <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-400 border-2 border-slate-950"></div>
+            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-400 border-2 border-slate-950"></div>
+
+            <!-- Top Row: Icon & Badge -->
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-1.5">
+                \${style.iconSvg}
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border \${style.badgeBg}">
+                  \${style.badgeText}
+                </span>
+              </div>
+              <span class="beacon flex h-2 w-2 relative \${isActive ? '' : 'hidden'}">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+              </span>
+            </div>
+
+            <!-- Title -->
+            <div class="font-bold text-xs text-white tracking-tight mb-1 truncate font-mono">
+              \${escapeHtml(node.label)}
+            </div>
+
+            <!-- File Path & Line Range -->
+            <div class="text-[10px] font-mono text-slate-400 mb-1.5 truncate flex items-center gap-1">
+              <span>📄</span>
+              <span class="truncate">\${escapeHtml(node.filePath)}:\${node.lineRange ? node.lineRange[0] + '-' + node.lineRange[1] : ''}</span>
+            </div>
+
+            <!-- Description -->
+            \${node.description ? \`
+              <p class="text-[10px] text-slate-300/80 line-clamp-2 leading-relaxed">
+                \${escapeHtml(node.description)}
+              </p>
+            \` : ''}
+          </div>
+        \`;
+      });
+      nodesLayer.innerHTML = nodesHtml;
+
+      // Attach Node Click Listeners (jump to chapter)
+      document.querySelectorAll('.node-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const nid = card.getAttribute('data-node-id');
+          selectedNodeId = nid;
+          highlightActiveNodes(activeNodeIds);
+
+          // Find chapter
+          const cards = document.querySelectorAll('.chapter-card');
+          const targetIdx = STORY.chapters.findIndex(ch =>
+            (ch.activeNodes || []).includes(nid) ||
+            (ch.activeNodes || []).some(id => id.split(':').pop() === nid.split(':').pop())
+          );
+
+          if (targetIdx !== -1 && cards[targetIdx]) {
+            cards[targetIdx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            cards[targetIdx].classList.add('ring-4', 'ring-indigo-400');
+            setTimeout(() => cards[targetIdx].classList.remove('ring-4', 'ring-indigo-400'), 1800);
+          }
+        });
+      });
+
+      updateMinimap();
     }
+
+    // Fit View
+    function fitView(smooth = true) {
+      if (!layoutNodes.length) return;
+      const vpWidth = viewport.clientWidth;
+      const vpHeight = viewport.clientHeight;
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      layoutNodes.forEach(n => {
+        minX = Math.min(minX, n.x);
+        maxX = Math.max(maxX, n.x + n.width);
+        minY = Math.min(minY, n.y);
+        maxY = Math.max(maxY, n.y + n.height);
+      });
+
+      const graphWidth = maxX - minX;
+      const graphHeight = maxY - minY;
+      const padding = 80;
+
+      const scaleX = (vpWidth - padding * 2) / graphWidth;
+      const scaleY = (vpHeight - padding * 2) / graphHeight;
+      const scale = Math.min(1.2, Math.max(0.3, Math.min(scaleX, scaleY)));
+
+      transform.k = scale;
+      transform.x = (vpWidth - graphWidth * scale) / 2 - minX * scale;
+      transform.y = (vpHeight - graphHeight * scale) / 2 - minY * scale;
+
+      applyTransform(smooth);
+    }
+
+    // Center on specific active nodes
+    function centerOnNodes(nodeIds) {
+      const targets = layoutNodes.filter(n => nodeIds.has(n.id) || Array.from(nodeIds).some(nid => nid.split(':').pop() === n.id.split(':').pop()));
+      if (!targets.length) return;
+
+      const vpWidth = viewport.clientWidth;
+      const vpHeight = viewport.clientHeight;
+
+      let avgX = 0, avgY = 0;
+      targets.forEach(t => {
+        avgX += t.x + t.width / 2;
+        avgY += t.y + t.height / 2;
+      });
+      avgX /= targets.length;
+      avgY /= targets.length;
+
+      transform.x = vpWidth / 2 - avgX * transform.k;
+      transform.y = vpHeight / 2 - avgY * transform.k;
+      applyTransform(true);
+    }
+
+    // Update active highlight
+    function highlightActiveNodes(nodeIds) {
+      activeNodeIds = new Set(nodeIds);
+      document.querySelectorAll('.node-card').forEach(el => {
+        const nid = el.getAttribute('data-node-id');
+        const isActive = activeNodeIds.has(nid) || Array.from(activeNodeIds).some(id => id.split(':').pop() === nid.split(':').pop());
+        const isSelected = selectedNodeId === nid;
+        const beacon = el.querySelector('.beacon');
+
+        if (isSelected) {
+          el.className = el.className.replace(/inactive-node|active-node/g, '').trim() + ' active-node ring-2 ring-indigo-400 border-indigo-400';
+          if (beacon) beacon.classList.remove('hidden');
+        } else if (isActive) {
+          el.className = el.className.replace(/inactive-node|ring-2 ring-indigo-400 border-indigo-400/g, '').trim() + ' active-node';
+          if (beacon) beacon.classList.remove('hidden');
+        } else {
+          el.className = el.className.replace(/active-node|ring-2 ring-indigo-400 border-indigo-400/g, '').trim() + ' inactive-node';
+          if (beacon) beacon.classList.add('hidden');
+        }
+      });
+
+      // Update edges
+      document.querySelectorAll('.edge-line').forEach(line => {
+        const src = line.getAttribute('data-edge-source');
+        const tgt = line.getAttribute('data-edge-target');
+        const isEdgeActive = (activeNodeIds.has(src) || Array.from(activeNodeIds).some(id => id.split(':').pop() === src.split(':').pop())) &&
+          (activeNodeIds.has(tgt) || Array.from(activeNodeIds).some(id => id.split(':').pop() === tgt.split(':').pop()));
+        if (isEdgeActive) {
+          line.classList.add('active-edge');
+          line.setAttribute('marker-end', 'url(#arrow-active)');
+        } else {
+          line.classList.remove('active-edge');
+          line.setAttribute('marker-end', 'url(#arrow)');
+        }
+      });
+    }
+
+    // Minimap
+    function updateMinimap() {
+      const miniSvg = document.getElementById('minimap-svg');
+      const miniVp = document.getElementById('minimap-viewport');
+      if (!miniSvg || !miniVp || !layoutNodes.length) return;
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      layoutNodes.forEach(n => {
+        minX = Math.min(minX, n.x);
+        maxX = Math.max(maxX, n.x + n.width);
+        minY = Math.min(minY, n.y);
+        maxY = Math.max(maxY, n.y + n.height);
+      });
+
+      const gw = Math.max(100, maxX - minX + 160);
+      const gh = Math.max(100, maxY - minY + 160);
+      const mw = 144;
+      const mh = 96;
+      const scale = Math.min(mw / gw, mh / gh);
+
+      let dots = '';
+      layoutNodes.forEach(n => {
+        const nx = (n.x - minX + 80) * scale;
+        const ny = (n.y - minY + 80) * scale;
+        const nw = Math.max(6, n.width * scale);
+        const nh = Math.max(3, n.height * scale);
+        const cfg = typeConfig[n.type] || typeConfig.utility;
+        const isActive = activeNodeIds.has(n.id);
+        dots += \`<rect x="\${nx}" y="\${ny}" width="\${nw}" height="\${nh}" rx="2" fill="\${cfg.color}" opacity="\${isActive ? 1 : 0.4}"/>\`;
+      });
+      miniSvg.innerHTML = dots;
+
+      // Viewport box
+      const vpW = viewport.clientWidth;
+      const vpH = viewport.clientHeight;
+      const curX = (-transform.x / transform.k - minX + 80) * scale;
+      const curY = (-transform.y / transform.k - minY + 80) * scale;
+      const curW = Math.max(12, (vpW / transform.k) * scale);
+      const curH = Math.max(12, (vpH / transform.k) * scale);
+
+      miniVp.style.left = Math.max(0, Math.min(mw - 10, curX)) + 'px';
+      miniVp.style.top = Math.max(0, Math.min(mh - 10, curY)) + 'px';
+      miniVp.style.width = Math.min(mw, curW) + 'px';
+      miniVp.style.height = Math.min(mh, curH) + 'px';
+    }
+
+    // Pan & Zoom Event Listeners
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node-card')) return;
+      isDragging = true;
+      dragStartX = e.clientX - transform.x;
+      dragStartY = e.clientY - transform.y;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      transform.x = e.clientX - dragStartX;
+      transform.y = e.clientY - dragStartY;
+      applyTransform(false);
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.node-card')) return;
+      if (e.touches.length === 1) {
+        isDragging = true;
+        touchStartX = e.touches[0].clientX - transform.x;
+        touchStartY = e.touches[0].clientY - transform.y;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      transform.x = e.touches[0].clientX - touchStartX;
+      transform.y = e.touches[0].clientY - touchStartY;
+      applyTransform(false);
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => { isDragging = false; });
+
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      const newK = Math.max(0.25, Math.min(2.2, transform.k * zoomFactor));
+
+      transform.x = mouseX - (mouseX - transform.x) * (newK / transform.k);
+      transform.y = mouseY - (mouseY - transform.y) * (newK / transform.k);
+      transform.k = newK;
+      applyTransform(false);
+    }, { passive: false });
+
+    // Floating Button Controls
+    document.getElementById('btn-zoom-in').onclick = () => {
+      transform.k = Math.min(2.2, transform.k * 1.2);
+      applyTransform(true);
+    };
+    document.getElementById('btn-zoom-out').onclick = () => {
+      transform.k = Math.max(0.25, transform.k * 0.8);
+      applyTransform(true);
+    };
+    document.getElementById('btn-fit').onclick = () => fitView(true);
+    document.getElementById('btn-dir').onclick = () => {
+      currentDirection = currentDirection === 'TB' ? 'LR' : 'TB';
+      document.getElementById('dir-label').innerText = currentDirection;
+      computeLayout(currentDirection);
+      renderGraph();
+      fitView(true);
+    };
 
     // Render Chapters
     const chaptersList = document.getElementById('chapters-list');
     (STORY.chapters || []).forEach((chap, i) => {
       const card = document.createElement('div');
+      card.id = \`chapter-card-\${i}\`;
       card.className = 'chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700';
       card.setAttribute('data-index', i);
 
       let snippets = '';
-      (chap.codeSnippets || []).forEach(s => {
+      (chap.codeSnippets || []).forEach((s, sIdx) => {
         snippets += \`
-          <div class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner">
+          <div id="snippet-\${i}-\${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
             <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-              <span>📄 \${escapeHtml(s.filePath)}:\${s.startLine}-\${s.endLine}</span>
-              <span class="text-indigo-400 font-sans">\${escapeHtml(s.annotation || '')}</span>
+              <div class="flex items-center gap-2 truncate">
+                <span>📄</span>
+                <span class="truncate">\${escapeHtml(s.filePath)}:\${s.startLine}-\${s.endLine}</span>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <span class="text-indigo-400 font-sans font-medium hidden sm:inline">\${escapeHtml(s.annotation || '')}</span>
+                <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="\${escapeHtml(s.code)}">Copy</button>
+              </div>
             </div>
             <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>\${escapeHtml(s.code)}</code></pre>
           </div>
@@ -231,20 +755,30 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
 
       card.innerHTML = \`
         <div class="flex items-center gap-3 mb-3">
-          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">Chapter \${chap.chapterNumber}</span>
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter \${chap.chapterNumber}</span>
           <h3 class="text-lg font-bold text-white tracking-tight">\${escapeHtml(chap.title)}</h3>
         </div>
         <p class="text-sm font-medium text-slate-300 mb-3">\${escapeHtml(chap.summary)}</p>
         <p class="text-sm text-slate-400 leading-relaxed mb-4">\${escapeHtml(chap.narrative)}</p>
         <div class="flex flex-wrap gap-1.5 mb-2">
-          \${(chap.activeNodes || []).map(nodeId => \`<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700">\${escapeHtml(nodeId.split(':').pop())}</span>\`).join('')}
+          \${(chap.activeNodes || []).map(nodeId => \`
+            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('\${escapeHtml(nodeId)}')">
+              \${escapeHtml(nodeId.split(':').pop())}
+            </span>
+          \`).join('')}
         </div>
         \${snippets}
       \`;
       chaptersList.appendChild(card);
     });
 
-    // Parallax scroll spy
+    window.focusNode = function(nid) {
+      selectedNodeId = nid;
+      highlightActiveNodes(new Set([nid]));
+      centerOnNodes(new Set([nid]));
+    };
+
+    // Parallax Scroll Spy
     const pane = document.getElementById('narrative-pane');
     const cards = document.querySelectorAll('.chapter-card');
     const observer = new IntersectionObserver((entries) => {
@@ -255,16 +789,36 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
           const idx = parseInt(entry.target.getAttribute('data-index'));
           const activeChap = STORY.chapters[idx];
           if (activeChap) {
+            selectedNodeId = null;
             document.getElementById('current-chapter-indicator').innerText = 'Chapter ' + activeChap.chapterNumber + ' Focus';
-            document.getElementById('active-nodes-list').innerText = (activeChap.activeNodes || []).map(n => n.split(':').pop()).join(', ') || 'Global';
+            const nodeLabels = (activeChap.activeNodes || []).map(n => n.split(':').pop()).join(', ') || 'Global';
+            document.getElementById('active-nodes-list').innerText = nodeLabels;
+
+            const activeSet = new Set(activeChap.activeNodes || []);
+            highlightActiveNodes(activeSet);
+            centerOnNodes(activeSet);
           }
         }
       });
-    }, { root: pane, threshold: 0.5 });
+    }, { root: pane, threshold: 0.45 });
 
     cards.forEach(c => observer.observe(c));
-    if (cards[0]) cards[0].classList.add('active-card');
-    renderDiagram();
+
+    // Initialize Layout & Graph
+    computeLayout('TB');
+    renderGraph();
+    setTimeout(() => {
+      fitView(false);
+      if (cards[0]) {
+        cards[0].classList.add('active-card');
+        const firstChap = STORY.chapters[0];
+        if (firstChap) {
+          const firstSet = new Set(firstChap.activeNodes || []);
+          highlightActiveNodes(firstSet);
+          centerOnNodes(firstSet);
+        }
+      }
+    }, 100);
   </script>
 </body>
 </html>`;

@@ -69,6 +69,31 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const selectNode = (nodeId: string | null) => {
     setSelectedNodeId(nodeId);
+    if (!nodeId) return;
+
+    // Find the chapter that features this node in activeNodes or matches its file/symbol
+    const symbolLabel = nodeId.split(':').pop() || '';
+    const targetChapterIdx = story.chapters.findIndex((chap) => {
+      if (chap.activeNodes.includes(nodeId)) return true;
+      return chap.codeSnippets.some(
+        (s) => nodeId.includes(s.filePath) || (symbolLabel && s.code.includes(symbolLabel))
+      );
+    });
+
+    if (targetChapterIdx !== -1) {
+      setActiveChapterIndex(targetChapterIdx);
+      setTimeout(() => {
+        const card = document.getElementById(`chapter-card-${targetChapterIdx}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Highlight card temporarily
+          card.classList.add('ring-4', 'ring-indigo-400/80', 'border-indigo-400');
+          setTimeout(() => {
+            card.classList.remove('ring-4', 'ring-indigo-400/80', 'border-indigo-400');
+          }, 2500);
+        }
+      }, 50);
+    }
   };
 
   const ingestRepo = async (options: IngestionOptions) => {

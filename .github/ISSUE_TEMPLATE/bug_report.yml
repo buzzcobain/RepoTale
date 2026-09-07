@@ -1,0 +1,72 @@
+name: 🐛 Bug Report
+description: File a bug report to help us improve RepoTale
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please ensure you have searched existing issues before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: RepoTale Version / Commit
+      description: What version or git commit hash of RepoTale are you running?
+      placeholder: e.g. v1.0.0 or commit b30b7d3
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Operating System & Execution Environment
+      options:
+        - "macOS (Apple Silicon - M1/M2/M3/M4/M5)"
+        - "macOS (Intel)"
+        - "Windows 11 / 10"
+        - "Linux (Ubuntu / Debian / Fedora / Arch)"
+        - "Web Browser Dev Mode (Vite localhost:1420)"
+    validations:
+      required: true
+  - type: dropdown
+    id: llm_provider
+    attributes:
+      label: LLM Provider In Use
+      options:
+        - "Ollama (Local)"
+        - "Google Gemini (Cloud BYOK)"
+        - "Anthropic Claude (Cloud BYOK)"
+        - "OpenAI (Cloud BYOK)"
+        - "Offline Synthetic / Sample Mode"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Ingest repository '...'
+        2. Click on '...'
+        3. Scroll down to Chapter 2
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Console Output
+      description: Paste any terminal or browser developer console errors here.
+      render: shell

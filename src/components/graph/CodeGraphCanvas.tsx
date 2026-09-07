@@ -189,9 +189,9 @@ const FlowInner: React.FC = () => {
       </ReactFlow>
 
       {/* Bottom Status Pill */}
-      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 text-[11px] text-slate-400">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span>Camera synchronized with narrative scroll</span>
+      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 text-[11px] text-slate-300">
+        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+        <span>💡 Click any diagram node to jump to its story chapter & code snippet</span>
       </div>
     </div>
   );

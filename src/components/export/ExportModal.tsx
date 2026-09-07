@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { exportRepoTaleDocs } from '../../services/tauriBridge';
+import { exportRepoTaleDocs, fetchGitRemoteInfo } from '../../services/tauriBridge';
 import { generateMarkdownReadme, generateStandaloneHtml } from '../../services/exportService';
 import { ExportOptions } from '../../types/api';
-import { X, Download, Copy, Check, FileCode, Globe, GitBranch } from 'lucide-react';
+import { X, Download, Copy, Check, FileCode, Globe, GitBranch, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -14,13 +14,37 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
   const { story } = useStory();
 
   const [activeTab, setActiveTab] = useState<'markdown' | 'static_html' | 'branch'>('markdown');
-  const [githubUser, setGithubUser] = useState('username');
-  const [repoName, setRepoName] = useState(story.meta.repoName.split('/').pop() || 'repo');
+  const [githubUser, setGithubUser] = useState(() => {
+    const parts = story.meta.repoName.split('/');
+    return parts.length > 1 ? parts[0] : 'buzzcobain';
+  });
+  const [repoName, setRepoName] = useState(() => {
+    const parts = story.meta.repoName.split('/');
+    return parts.length > 1 ? parts[1] : story.meta.repoName;
+  });
   const [includeBadge, setIncludeBadge] = useState(true);
   const [includeMermaid, setIncludeMermaid] = useState(true);
   const [includeDetails, setIncludeDetails] = useState(true);
+  const [updateReadmeInPlace, setUpdateReadmeInPlace] = useState(true);
+  const [pushBranchToRemote, setPushBranchToRemote] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isExportingBranch, setIsExportingBranch] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [prUrl, setPrUrl] = useState<string | null>(null);
+  const [pushedToRemote, setPushedToRemote] = useState<boolean | null>(null);
+  const [branchName, setBranchName] = useState<string>('docs/repotale-guide');
+  const [copiedCommand, setCopiedCommand] = useState(false);
+  const [gitErrorMsg, setGitErrorMsg] = useState<string | null>(null);
+
+  // Auto-detect remote git owner/repo
+  useEffect(() => {
+    if (isOpen) {
+      fetchGitRemoteInfo().then(info => {
+        if (info.owner) setGithubUser(info.owner);
+        if (info.repo) setRepoName(info.repo);
+      });
+    }
+  }, [isOpen]);
 
   const exportOptions: ExportOptions = useMemo(() => ({
     includeBadge,
@@ -29,7 +53,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     generateStaticHtml: true,
     githubUsername: githubUser,
     repositoryName: repoName,
-  }), [includeBadge, includeMermaid, includeDetails, githubUser, repoName]);
+    updateReadme: updateReadmeInPlace,
+    pushToRemote: pushBranchToRemote,
+  }), [includeBadge, includeMermaid, includeDetails, githubUser, repoName, updateReadmeInPlace, pushBranchToRemote]);
 
   const markdownPreview = useMemo(() => {
     return generateMarkdownReadme(story, exportOptions);
@@ -60,11 +86,33 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleExportToBranch = async () => {
+    setIsExportingBranch(true);
+    setExportStatus(null);
+    setPrUrl(null);
+    setPushedToRemote(null);
+    setGitErrorMsg(null);
     try {
       const res = await exportRepoTaleDocs(story, exportOptions);
-      setExportStatus(`Exported successfully! Generated REPOTALE.md and /docs/index.html (branch: ${res.branchName || 'docs/repotale-guide'}).`);
+      const isPushed = !!res.pushedToRemote;
+      setBranchName(res.branchName || 'docs/repotale-guide');
+      setPushedToRemote(isPushed);
+
+      if (isPushed) {
+        setExportStatus(`Branch ${res.branchName || 'docs/repotale-guide'} pushed to origin! Ready for PR.`);
+        if (res.prUrl) {
+          setPrUrl(res.prUrl);
+        }
+      } else {
+        setExportStatus(`Branch ${res.branchName || 'docs/repotale-guide'} created locally with updated README & /docs/index.html.`);
+        if (res.gitError) {
+          setGitErrorMsg(res.gitError);
+        }
+      }
     } catch (e: any) {
       setExportStatus(`Export failed: ${e?.message || 'Error writing files'}`);
+      setPushedToRemote(false);
+    } finally {
+      setIsExportingBranch(false);
     }
   };
 
@@ -237,24 +285,92 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           )}
+          {/* Branch push status notice */}
+          {pushedToRemote === false && (
+            <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs space-y-2.5">
+              <div className="flex items-center gap-1.5 font-semibold text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Branch created locally, but needs to be pushed to remote</span>
+              </div>
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                GitHub returns a <strong>404 error</strong> if you visit the Pull Request page before pushing the branch. Run this Git/SSH command in your terminal first:
+              </p>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 font-mono text-[11px] text-emerald-300 border border-slate-800">
+                <span>git push -u origin {branchName}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`git push -u origin ${branchName}`);
+                    setCopiedCommand(true);
+                    setTimeout(() => setCopiedCommand(false), 2000);
+                  }}
+                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-[10px] flex items-center gap-1 transition-colors"
+                >
+                  {copiedCommand ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedCommand ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+              {gitErrorMsg && (
+                <div className="text-[10px] font-mono text-amber-400/90 bg-slate-900/80 p-2 rounded border border-slate-800 break-all">
+                  Remote note: {gitErrorMsg}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-850 flex items-center justify-between shrink-0">
-          <button
-            onClick={handleExportToBranch}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
-          >
-            <GitBranch className="w-4 h-4 text-indigo-400" />
-            <span>Commit to branch: docs/repotale-guide</span>
-          </button>
+        <div className="px-6 py-4 border-t border-slate-800 bg-slate-850 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-4 text-xs text-slate-300">
+            <label className="flex items-center gap-1.5 cursor-pointer" title="Append/inject the interactive guide directly into README.md">
+              <input
+                type="checkbox"
+                checked={updateReadmeInPlace}
+                onChange={(e) => setUpdateReadmeInPlace(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-indigo-600 bg-slate-950 border-slate-700"
+              />
+              <span>Update README.md</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer" title="Push branch to remote using your Git/SSH credentials">
+              <input
+                type="checkbox"
+                checked={pushBranchToRemote}
+                onChange={(e) => setPushBranchToRemote(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-indigo-600 bg-slate-950 border-slate-700"
+              />
+              <span>Push via Git/SSH</span>
+            </label>
+          </div>
 
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
-          >
-            Done
-          </button>
+          <div className="flex items-center gap-2">
+            {prUrl && pushedToRemote && (
+              <a
+                href={prUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20"
+              >
+                <span>Open PR on GitHub</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+
+            <button
+              onClick={handleExportToBranch}
+              disabled={isExportingBranch}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+            >
+              <GitBranch className="w-4 h-4" />
+              <span>{isExportingBranch ? 'Creating & Pushing...' : 'Create & Push Branch'}</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>

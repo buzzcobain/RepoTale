@@ -12,6 +12,8 @@ pub struct ExportPayload {
     pub branch_name: Option<String>,
     pub github_username: Option<String>,
     pub repo_name: Option<String>,
+    pub update_readme: Option<bool>,
+    pub push_to_remote: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,6 +21,8 @@ pub struct ExportResult {
     pub readme_addition: String,
     pub static_html_path: String,
     pub branch_created: bool,
+    pub pushed_to_remote: bool,
+    pub pr_url: Option<String>,
 }
 
 pub fn generate_markdown_readme(story_json_str: &str, github_user: &str, repo_name: &str) -> Result<String> {
@@ -259,6 +263,20 @@ pub fn export_all(payload: &ExportPayload) -> Result<ExportResult> {
     let repotale_md_path = target.join("REPOTALE.md");
     fs::write(&repotale_md_path, &readme_addition)?;
 
+    // Update README.md in place
+    if payload.update_readme.unwrap_or(true) {
+        let readme_path = target.join("README.md");
+        if readme_path.exists() {
+            let current = fs::read_to_string(&readme_path).unwrap_or_default();
+            if !current.contains("RepoTale Interactive Guide") {
+                let updated = format!("{}\n\n---\n\n{}", current.trim_end(), readme_addition);
+                let _ = fs::write(&readme_path, updated);
+            }
+        } else {
+            let _ = fs::write(&readme_path, &readme_addition);
+        }
+    }
+
     // 2. Standalone static HTML into /docs/index.html
     let docs_dir = target.join("docs");
     fs::create_dir_all(&docs_dir)?;
@@ -266,18 +284,21 @@ pub fn export_all(payload: &ExportPayload) -> Result<ExportResult> {
     let html_path = docs_dir.join("index.html");
     fs::write(&html_path, &static_html)?;
 
-    // 3. Optional Git branch
+    // 3. Git branch creation and remote push using repository git/SSH credentials
     let mut branch_created = false;
+    let mut pushed_to_remote = false;
+    let mut pr_url = None;
+
     if payload.create_git_branch {
         let branch = payload.branch_name.as_deref().unwrap_or("docs/repotale-guide");
         let _ = Command::new("git")
             .current_dir(target)
-            .args(["checkout", "-b", branch])
+            .args(["checkout", "-B", branch])
             .status();
 
         let _ = Command::new("git")
             .current_dir(target)
-            .args(["add", "REPOTALE.md", "docs/index.html"])
+            .args(["add", "README.md", "REPOTALE.md", "docs/index.html"])
             .status();
 
         let status = Command::new("git")
@@ -286,11 +307,24 @@ pub fn export_all(payload: &ExportPayload) -> Result<ExportResult> {
             .status();
 
         branch_created = status.map(|s| s.success()).unwrap_or(false);
+
+        if payload.push_to_remote.unwrap_or(true) {
+            let push_status = Command::new("git")
+                .current_dir(target)
+                .args(["push", "-u", "origin", branch])
+                .status();
+            pushed_to_remote = push_status.map(|s| s.success()).unwrap_or(false);
+            if pushed_to_remote {
+                pr_url = Some(format!("https://github.com/{}/{}/pull/new/{}", github_user, repo_name, branch));
+            }
+        }
     }
 
     Ok(ExportResult {
         readme_addition,
         static_html_path: html_path.to_string_lossy().to_string(),
         branch_created,
+        pushed_to_remote,
+        pr_url,
     })
 }

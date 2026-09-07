@@ -1,7 +1,9 @@
 # 🧭 RepoTale (`repotale.com`)
 
 [![RepoTale Interactive Guide](https://img.shields.io/badge/RepoTale-Interactive_Tour-blue?style=for-the-badge&logo=compass)](https://repotale.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://github.com/buzzcobain/RepoTale/actions/workflows/ci.yml/badge.svg)](https://github.com/buzzcobain/RepoTale/actions/workflows/ci.yml)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2.0-blueviolet)](https://v2.tauri.app/)
 [![React 18](https://img.shields.io/badge/React-18-blue)](https://react.dev)
 
@@ -122,3 +124,20 @@ export interface RepoTaleStory {
 * Shallow git clones are strictly sandboxed within OS temporary directories.
 * Repository URLs are sanitized against shell injection characters.
 * API keys are accessed through native OS Keychain entries (`keyring` crate) without saving secrets in plain-text configuration files.
+
+---
+
+## 🤝 Contributing & Community
+
+Contributions are warmly welcomed! RepoTale is an open-source community effort.
+* **[Contributing Guide](./CONTRIBUTING.md)**: Setup, branch conventions, and workflow.
+* **[Code of Conduct](./CODE_OF_CONDUCT.md)**: Community standards and pledge.
+* **[Contributor License Agreement (CLA)](./CLA.md)**: IP protection for contributors and users.
+* **[Security Policy](./SECURITY.md)**: Vulnerability reporting procedures.
+
+---
+
+## 📄 License
+
+This project is licensed under the Apache License, Version 2.0. See the [LICENSE](./LICENSE) file for the full license text.
+

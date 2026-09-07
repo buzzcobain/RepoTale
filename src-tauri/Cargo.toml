@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "RepoTale - Interactive Codebase Story & Visual Architecture"
 authors = ["RepoTale Team"]
 edition = "2021"
+license = "Apache-2.0"
 
 [lib]
 name = "repotale_lib"

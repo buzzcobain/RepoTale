@@ -1,0 +1,41 @@
+name: 💡 Feature Proposal
+description: Suggest an architectural or functional idea for RepoTale
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement! We value community feedback and architectural ideas.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a specific problem or friction point? (e.g. "I'm always frustrated when...")
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution & Architecture
+      description: Describe the solution you'd like to see implemented.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches Considered
+      description: Describe any alternative solutions or features you've considered.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      options:
+        - "AST Parser / Language Support (e.g. Go, Java, C++, Zig)"
+        - "Code Graph & Layout (@xyflow/react / Dagre)"
+        - "Narrative Walkthrough & Chapter Engine"
+        - "LLM Integration (Local Ollama or Cloud BYOK)"
+        - "Export Pipelines (GitHub Pages, Markdown, PDF)"
+        - "Q&A Sidecar Copilot"
+        - "Other"
+    validations:
+      required: true

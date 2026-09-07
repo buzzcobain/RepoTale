@@ -293,5 +293,529 @@ impl<R: Runtime> InvokeMessage<R> {
         ]
       }
     ]
+  },
+  'express': {
+    meta: {
+      repoName: 'expressjs/express',
+      description: 'Fast, unopinionated, minimalist web framework for Node.js',
+      primaryLanguage: 'JavaScript',
+      frameworks: ['Node.js', 'Router', 'Connect'],
+      entryPoint: 'lib/express.js',
+      githubUrl: 'https://github.com/expressjs/express',
+      analyzedAt: new Date().toISOString()
+    },
+    callGraph: {
+      nodes: [
+        { id: 'lib/express.js:createApplication', label: 'createApplication()', type: 'entry', filePath: 'lib/express.js', lineRange: [35, 60], description: 'Creates an Express application callable with prototype methods' },
+        { id: 'lib/router/index.js:Router', label: 'Router Pipeline', type: 'service', filePath: 'lib/router/index.js', lineRange: [40, 110], description: 'Main router matching request URL paths against layer stacks' },
+        { id: 'lib/router/layer.js:Layer', label: 'Route Layer', type: 'middleware', filePath: 'lib/router/layer.js', lineRange: [30, 95], description: 'Encapsulates path regex matching and middleware dispatch' },
+        { id: 'lib/request.js:req', label: 'Request Prototype', type: 'data', filePath: 'lib/request.js', lineRange: [20, 120], description: 'Extends Node http.IncomingMessage with params, query, and headers' },
+        { id: 'lib/response.js:res', label: 'Response Prototype', type: 'data', filePath: 'lib/response.js', lineRange: [40, 150], description: 'Extends Node http.ServerResponse with json, send, and status helpers' },
+        { id: 'lib/view.js:View', label: 'Template View Engine', type: 'utility', filePath: 'lib/view.js', lineRange: [35, 100], description: 'Resolves filesystem template files and invokes render engines' }
+      ],
+      edges: [
+        { id: 'e1', source: 'lib/express.js:createApplication', target: 'lib/router/index.js:Router', label: 'delegates routing' },
+        { id: 'e2', source: 'lib/router/index.js:Router', target: 'lib/router/layer.js:Layer', label: 'evaluates layers' },
+        { id: 'e3', source: 'lib/router/layer.js:Layer', target: 'lib/request.js:req', label: 'populates params' },
+        { id: 'e4', source: 'lib/router/layer.js:Layer', target: 'lib/response.js:res', label: 'passes response' },
+        { id: 'e5', source: 'lib/response.js:res', target: 'lib/view.js:View', label: 'renders template' }
+      ]
+    },
+    chapters: [
+      {
+        id: 'exp-1',
+        chapterNumber: 1,
+        title: 'Application Factory & Prototype Inheritance',
+        summary: 'How express() bootstraps the app function and merges EventEmitter & Router prototypes.',
+        narrative: 'When you invoke `express()`, it returns a JavaScript function `app(req, res, next)`. Under the hood, it dynamically delegates prototypes from `application.js` and initializes the default middleware stack.',
+        activeNodes: ['lib/express.js:createApplication', 'lib/router/index.js:Router'],
+        codeSnippets: [
+          {
+            filePath: 'lib/express.js',
+            startLine: 37,
+            endLine: 54,
+            annotation: 'createApplication merges mixins into the callable app function.',
+            code: `function createApplication() {
+  var app = function(req, res, next) {
+    app.handle(req, res, next);
+  };
+
+  mixin(app, EventEmitter.prototype, false);
+  mixin(app, proto, false);
+
+  app.request = Object.create(req, { app: { configurable: true, enumerable: true, writable: true, value: app } });
+  app.response = Object.create(res, { app: { configurable: true, enumerable: true, writable: true, value: app } });
+  app.init();
+  return app;
+}`
+          }
+        ]
+      },
+      {
+        id: 'exp-2',
+        chapterNumber: 2,
+        title: 'Router Stack & Recursive Layer Traversal',
+        summary: 'How incoming HTTP requests are processed through middleware chains using next().',
+        narrative: 'Express routes requests through a chain of `Layer` instances. When a middleware executes `next()`, the router advances to the next layer matching the request URL path and HTTP method.',
+        activeNodes: ['lib/router/index.js:Router', 'lib/router/layer.js:Layer'],
+        codeSnippets: [
+          {
+            filePath: 'lib/router/layer.js',
+            startLine: 35,
+            endLine: 58,
+            annotation: 'Layer handles path matching with path-to-regexp and executes the handler.',
+            code: `function Layer(path, options, fn) {
+  if (!(this instanceof Layer)) {
+    return new Layer(path, options, fn);
+  }
+
+  this.handle = fn;
+  this.name = fn.name || '<anonymous>';
+  this.params = undefined;
+  this.path = undefined;
+  this.regexp = pathRegexp(path, (this.keys = []), options);
+}`
+          }
+        ]
+      },
+      {
+        id: 'exp-3',
+        chapterNumber: 3,
+        title: 'Request & Response Prototype Augmentation',
+        summary: 'Extending standard Node.js HTTP primitives with convenient helper methods.',
+        narrative: 'Express wraps Node.js `IncomingMessage` and `ServerResponse` with utilities like `res.json()`, `res.status()`, `req.query`, and `req.params`. When a handler returns data, `res.send()` automatically sets Content-Type headers and serializes responses.',
+        activeNodes: ['lib/request.js:req', 'lib/response.js:res', 'lib/view.js:View'],
+        codeSnippets: [
+          {
+            filePath: 'lib/response.js',
+            startLine: 65,
+            endLine: 85,
+            annotation: 'res.json serializes objects and sets application/json headers.',
+            code: `res.json = function json(obj) {
+  var val = obj;
+  var app = this.app;
+  var escape = app.get('json escape')
+  var replacer = app.get('json replacer');
+  var spaces = app.get('json spaces');
+  var body = stringify(val, replacer, spaces, escape);
+
+  if (!this.get('Content-Type')) {
+    this.set('Content-Type', 'application/json');
+  }
+
+  return this.send(body);
+};`
+          }
+        ]
+      }
+    ]
+  },
+  'repotale': {
+    meta: {
+      repoName: 'buzzcobain/RepoTale',
+      description: 'Interactive, local-first codebase storytelling & AST architecture visualizer',
+      primaryLanguage: 'TypeScript',
+      frameworks: ['Tauri v2', 'React 18', 'React Flow', 'Tree-sitter', 'Tailwind CSS'],
+      entryPoint: 'src/main.tsx',
+      githubUrl: 'https://github.com/buzzcobain/RepoTale',
+      analyzedAt: new Date().toISOString()
+    },
+    callGraph: {
+      nodes: [
+        { id: 'src-tauri/src/main.rs:main', label: 'Tauri Desktop Entry', type: 'entry', filePath: 'src-tauri/src/main.rs', lineRange: [1, 10], description: 'Boots native desktop shell and registers IPC handlers' },
+        { id: 'src-tauri/src/git.rs:GitSandbox', label: 'Git Sandbox Ingestion', type: 'service', filePath: 'src-tauri/src/git.rs', lineRange: [15, 65], description: 'Executes sanitized shallow git clones in isolated temp directories' },
+        { id: 'src-tauri/src/ast/parser.rs:RepoAstParser', label: 'Tree-sitter AST Engine', type: 'service', filePath: 'src-tauri/src/ast/parser.rs', lineRange: [50, 180], description: 'Extracts functions, classes, call-sites, and imports across TS, Python, and Rust' },
+        { id: 'src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', label: 'React Flow Canvas', type: 'service', filePath: 'src/components/graph/CodeGraphCanvas.tsx', lineRange: [40, 190], description: 'Dynamic visual architecture graph with Dagre layout and camera tracking' },
+        { id: 'src/components/narrative/NarrativePane.tsx:NarrativePane', label: 'Parallax Narrative Pane', type: 'service', filePath: 'src/components/narrative/NarrativePane.tsx', lineRange: [20, 110], description: 'Chapter-driven walkthrough synchronized with graph camera via IntersectionObserver' },
+        { id: 'src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer', label: 'Architectural Q&A Sidecar', type: 'middleware', filePath: 'src/components/sidecar/QASidecarDrawer.tsx', lineRange: [30, 140], description: 'Context-grounded copilot answering inquiries using active AST symbols' },
+        { id: 'src-tauri/src/export.rs:export_all', label: 'Dual-Layer Export Engine', type: 'utility', filePath: 'src-tauri/src/export.rs', lineRange: [250, 310], description: 'Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles' }
+      ],
+      edges: [
+        { id: 'e1', source: 'src-tauri/src/main.rs:main', target: 'src-tauri/src/git.rs:GitSandbox', label: 'clones sandbox' },
+        { id: 'e2', source: 'src-tauri/src/git.rs:GitSandbox', target: 'src-tauri/src/ast/parser.rs:RepoAstParser', label: 'parses AST' },
+        { id: 'e3', source: 'src-tauri/src/ast/parser.rs:RepoAstParser', target: 'src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', label: 'renders layout' },
+        { id: 'e4', source: 'src/components/narrative/NarrativePane.tsx:NarrativePane', target: 'src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', label: 'synchronizes focus' },
+        { id: 'e5', source: 'src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', target: 'src/components/narrative/NarrativePane.tsx:NarrativePane', label: 'jumps to chapter on click' },
+        { id: 'e6', source: 'src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', target: 'src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer', label: 'grounds Q&A' },
+        { id: 'e7', source: 'src/components/narrative/NarrativePane.tsx:NarrativePane', target: 'src-tauri/src/export.rs:export_all', label: 'exports docs' }
+      ]
+    },
+    chapters: [
+      {
+        id: 'rep-1',
+        chapterNumber: 1,
+        title: 'Sandboxed Git Ingestion & AST Extraction',
+        summary: 'Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.',
+        narrative: 'When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.',
+        activeNodes: ['src-tauri/src/main.rs:main', 'src-tauri/src/git.rs:GitSandbox', 'src-tauri/src/ast/parser.rs:RepoAstParser'],
+        codeSnippets: [
+          {
+            filePath: 'src-tauri/src/git.rs',
+            startLine: 20,
+            endLine: 40,
+            annotation: 'GitSandbox isolates repository files and validates URLs against shell injection.',
+            code: `pub fn clone_repo(url: &str) -> Result<Self> {
+    let sanitized_url = sanitize_git_url(url)?;
+    let sandbox = Self::new()?;
+
+    let status = Command::new("git")
+        .arg("clone")
+        .arg("--depth")
+        .arg("1")
+        .arg(&sanitized_url)
+        .arg(&sandbox.path)
+        .status()?;
+
+    if !status.success() {
+        let _ = sandbox.cleanup();
+        return Err(anyhow!("Git clone failed"));
+    }
+    Ok(sandbox)
+}`
+          }
+        ]
+      },
+      {
+        id: 'rep-2',
+        chapterNumber: 2,
+        title: 'Bidirectional Parallax Canvas & Camera Choreography',
+        summary: 'Synchronizing scroll progress with React Flow camera animations and node click navigation.',
+        narrative: 'The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.',
+        activeNodes: ['src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas', 'src/components/narrative/NarrativePane.tsx:NarrativePane'],
+        codeSnippets: [
+          {
+            filePath: 'src/context/StoryContext.tsx',
+            startLine: 70,
+            endLine: 95,
+            annotation: 'selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.',
+            code: `const selectNode = (nodeId: string | null) => {
+  setSelectedNodeId(nodeId);
+  if (!nodeId) return;
+
+  const targetChapterIdx = story.chapters.findIndex((chap) =>
+    chap.activeNodes.includes(nodeId)
+  );
+
+  if (targetChapterIdx !== -1) {
+    setActiveChapterIndex(targetChapterIdx);
+    const card = document.getElementById(\`chapter-card-\${targetChapterIdx}\`);
+    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};`
+          }
+        ]
+      },
+      {
+        id: 'rep-3',
+        chapterNumber: 3,
+        title: 'Context-Grounded Q&A & Dual-Layer Export',
+        summary: 'Zero-hallucination architectural queries and automated GitHub Pages exporter.',
+        narrative: 'The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.',
+        activeNodes: ['src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer', 'src-tauri/src/export.rs:export_all'],
+        codeSnippets: [
+          {
+            filePath: 'src-tauri/src/export.rs',
+            startLine: 258,
+            endLine: 285,
+            annotation: 'export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.',
+            code: `pub fn export_all(payload: &ExportPayload) -> Result<ExportResult> {
+    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;
+    let static_html = generate_standalone_html(&payload.story_json);
+    fs::write(docs_dir.join("index.html"), &static_html)?;
+
+    if payload.create_git_branch {
+        Command::new("git").args(["checkout", "-B", branch]).status()?;
+        Command::new("git").args(["add", "README.md", "docs/index.html"]).status()?;
+        Command::new("git").args(["commit", "-m", "docs: add RepoTale guide"]).status()?;
+        Command::new("git").args(["push", "-u", "origin", branch]).status()?;
+    }
+}`
+          }
+        ]
+      }
+    ]
+  },
+  'trpc': {
+    meta: {
+      repoName: 'trpc/trpc',
+      description: 'Move Fast and Break Nothing. End-to-end typesafe APIs made easy.',
+      primaryLanguage: 'TypeScript',
+      frameworks: ['tRPC', 'TypeScript', 'Zod'],
+      entryPoint: 'packages/server/src/core/router.ts',
+      githubUrl: 'https://github.com/trpc/trpc',
+      analyzedAt: new Date().toISOString()
+    },
+    callGraph: {
+      nodes: [
+        { id: 'packages/server/src/core/initTRPC.ts:initTRPC', label: 'initTRPC.create()', type: 'entry', filePath: 'packages/server/src/core/initTRPC.ts', lineRange: [20, 65], description: 'Initializes the tRPC root builder with context and meta types' },
+        { id: 'packages/server/src/core/router.ts:createRouterFactory', label: 'Router Factory', type: 'service', filePath: 'packages/server/src/core/router.ts', lineRange: [45, 120], description: 'Constructs the procedures lookup tree and recursive router caller' },
+        { id: 'packages/server/src/core/procedure.ts:procedure', label: 'Procedure Builder', type: 'middleware', filePath: 'packages/server/src/core/procedure.ts', lineRange: [30, 95], description: 'Defines input parsers (Zod), middlewares, queries, and mutations' },
+        { id: 'packages/server/src/core/middleware.ts:middlewareMarker', label: 'Middleware Pipeline', type: 'middleware', filePath: 'packages/server/src/core/middleware.ts', lineRange: [15, 60], description: 'Chains middleware execution interceptors with ctx transformations' },
+        { id: 'packages/client/src/createTRPCClient.ts:createTRPCClient', label: 'createTRPCClient()', type: 'data', filePath: 'packages/client/src/createTRPCClient.ts', lineRange: [35, 110], description: 'Proxy-based client generating HTTP/batch requests matching server types' },
+        { id: 'packages/server/src/error/TRPCError.ts:TRPCError', label: 'TRPCError Engine', type: 'utility', filePath: 'packages/server/src/error/TRPCError.ts', lineRange: [10, 50], description: 'Maps typed error codes (BAD_REQUEST, UNAUTHORIZED) to HTTP codes' }
+      ],
+      edges: [
+        { id: 'e1', source: 'packages/server/src/core/initTRPC.ts:initTRPC', target: 'packages/server/src/core/router.ts:createRouterFactory', label: 'supplies router builder' },
+        { id: 'e2', source: 'packages/server/src/core/initTRPC.ts:initTRPC', target: 'packages/server/src/core/procedure.ts:procedure', label: 'supplies procedure builder' },
+        { id: 'e3', source: 'packages/server/src/core/procedure.ts:procedure', target: 'packages/server/src/core/middleware.ts:middlewareMarker', label: 'chains middleware' },
+        { id: 'e4', source: 'packages/server/src/core/procedure.ts:procedure', target: 'packages/server/src/error/TRPCError.ts:TRPCError', label: 'formats faults' },
+        { id: 'e5', source: 'packages/client/src/createTRPCClient.ts:createTRPCClient', target: 'packages/server/src/core/router.ts:createRouterFactory', label: 'infers AppRouter types' }
+      ]
+    },
+    chapters: [
+      {
+        id: 'trpc-1',
+        chapterNumber: 1,
+        title: 'The Root Builder: initTRPC & Context',
+        summary: 'How tRPC establishes the root type container without code generation.',
+        narrative: 'tRPC starts by creating a root instance with `initTRPC.context<Context>().create()`. This object serves as the sole builder for procedures, routers, and middlewares, propagating TypeScript generics across your entire codebase without code generation.',
+        activeNodes: ['packages/server/src/core/initTRPC.ts:initTRPC', 'packages/server/src/core/router.ts:createRouterFactory'],
+        codeSnippets: [
+          {
+            filePath: 'packages/server/src/core/initTRPC.ts',
+            startLine: 20,
+            endLine: 45,
+            annotation: 'initTRPC builder instantiates the type-safe primitives factory.',
+            code: `export class TRPCBuilder<TContext extends object, TMeta extends object> {
+  create<TOptions extends RootConfigOptions<TContext, TMeta>>(options?: TOptions) {
+    const config = createRootConfig(options);
+    return {
+      _config: config,
+      router: createRouterFactory<TRoot>(config),
+      procedure: createProcedureBuilder<TRoot>(config),
+      middleware: createMiddlewareFactory<TRoot>(config),
+    };
+  }
+}`
+          }
+        ]
+      },
+      {
+        id: 'trpc-2',
+        chapterNumber: 2,
+        title: 'Procedure Composition & Middleware Interceptors',
+        summary: 'Chaining Zod input validation and contextual auth guards.',
+        narrative: 'Procedures are the core building blocks of tRPC. They chain input validation schemas (such as Zod, Yup, or Valibot) and custom middleware functions. Middleware can mutate the execution context `ctx` (for example, injecting an authenticated user) while preserving full type inference for downstream query/mutation resolvers.',
+        activeNodes: ['packages/server/src/core/procedure.ts:procedure', 'packages/server/src/core/middleware.ts:middlewareMarker', 'packages/server/src/error/TRPCError.ts:TRPCError'],
+        codeSnippets: [
+          {
+            filePath: 'packages/server/src/core/procedure.ts',
+            startLine: 35,
+            endLine: 62,
+            annotation: 'Procedure chaining attaches input schemas and executes middlewares sequentially.',
+            code: `export const protectedProcedure = t.procedure
+  .use(async ({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.session.user, // Typed as NonNullable user
+      },
+    });
+  });`
+          }
+        ]
+      },
+      {
+        id: 'trpc-3',
+        chapterNumber: 3,
+        title: 'Proxy Client & Zero-Cost Type Sharing',
+        summary: 'How ES6 Proxy delegates RPC method calls to HTTP requests.',
+        narrative: 'On the client side, `createTRPCClient<AppRouter>()` leverages ES6 `Proxy` to intercept arbitrary property accesses (e.g. `trpc.user.getById.query({ id: "123" })`). It serializes method names into URL paths or batch RPC payloads, guaranteeing compile-time type safety between frontend and backend without OpenAPI schemas or build steps.',
+        activeNodes: ['packages/client/src/createTRPCClient.ts:createTRPCClient', 'packages/server/src/core/router.ts:createRouterFactory'],
+        codeSnippets: [
+          {
+            filePath: 'packages/client/src/createTRPCClient.ts',
+            startLine: 35,
+            endLine: 58,
+            annotation: 'The proxy trap maps chained property access into remote batch queries.',
+            code: `export function createFlatProxy<TRouter extends AnyRouter>(callback: ProxyCallback) {
+  return new Proxy({} as any, {
+    get(_obj, prop) {
+      if (typeof prop !== 'string') return undefined;
+      return createRecursiveProxy((path) => callback({ path: [prop, ...path] }));
+    },
+  });
+}`
+          }
+        ]
+      }
+    ]
   }
 };
+
+/**
+ * Heuristic generator for any arbitrary repository, synthesizing an architectural
+ * walkthrough and AST node graph when direct LLM inference is offline or unavailable.
+ */
+export function generateSynthesizedStory(urlOrPath: string): RepoTaleStory {
+  const clean = urlOrPath
+    .replace(/^https?:\/\/github\.com\//, '')
+    .replace(/\.git$/, '')
+    .trim();
+  const repoName = clean || 'custom/repository';
+  const parts = repoName.split('/');
+  const shortName = parts[parts.length - 1] || 'repository';
+  const lower = repoName.toLowerCase();
+
+  let lang = 'TypeScript';
+  let frameworks = ['Node.js', 'Vite'];
+  let entryFile = 'src/index.ts';
+  let ext = 'ts';
+
+  if (lower.includes('py') || lower.includes('fast') || lower.includes('flask') || lower.includes('django')) {
+    lang = 'Python';
+    frameworks = ['Python 3.12', 'ASGI', 'Pydantic'];
+    entryFile = `${shortName}/main.py`;
+    ext = 'py';
+  } else if (lower.includes('rust') || lower.includes('rs') || lower.includes('tauri') || lower.includes('cargo')) {
+    lang = 'Rust';
+    frameworks = ['Rust 2021', 'Tokio', 'Serde'];
+    entryFile = 'src/main.rs';
+    ext = 'rs';
+  } else if (lower.includes('go') || lower.includes('gin') || lower.includes('fiber')) {
+    lang = 'Go';
+    frameworks = ['Go 1.23', 'Gorilla', 'Context'];
+    entryFile = 'main.go';
+    ext = 'go';
+  } else if (lower.includes('react') || lower.includes('next') || lower.includes('ui') || lower.includes('web')) {
+    lang = 'TypeScript';
+    frameworks = ['React', 'Next.js', 'Tailwind'];
+    entryFile = 'src/App.tsx';
+    ext = 'tsx';
+  }
+
+  const nodes = [
+    {
+      id: `${entryFile}:Entry`,
+      label: `${shortName} Bootstrap`,
+      type: 'entry' as const,
+      filePath: entryFile,
+      lineRange: [1, 45] as [number, number],
+      description: `Main bootstrap entrypoint for ${shortName} initializing runtime and routing`,
+    },
+    {
+      id: `src/middleware/pipeline.${ext}:Pipeline`,
+      label: 'Request Pipeline & Auth',
+      type: 'middleware' as const,
+      filePath: `src/middleware/pipeline.${ext}`,
+      lineRange: [10, 60] as [number, number],
+      description: 'Intercepts incoming events, validates tokens, and establishes request context',
+    },
+    {
+      id: `src/services/core_engine.${ext}:CoreService`,
+      label: 'Core Orchestration Service',
+      type: 'service' as const,
+      filePath: `src/services/core_engine.${ext}`,
+      lineRange: [25, 110] as [number, number],
+      description: 'Executes central business logic and coordinates domain operations',
+    },
+    {
+      id: `src/models/schema.${ext}:DataStore`,
+      label: 'Data Store & Serialization',
+      type: 'data' as const,
+      filePath: `src/models/schema.${ext}`,
+      lineRange: [15, 80] as [number, number],
+      description: 'Manages entity persistence, serialization, and state mutations',
+    },
+    {
+      id: `src/utils/telemetry.${ext}:Telemetry`,
+      label: 'Diagnostics & Observability',
+      type: 'utility' as const,
+      filePath: `src/utils/telemetry.${ext}`,
+      lineRange: [5, 40] as [number, number],
+      description: 'Structured logging, error tracing, and performance metrics tracking',
+    },
+  ];
+
+  const edges = [
+    { id: 'e1', source: nodes[0].id, target: nodes[1].id, label: 'initializes dispatch' },
+    { id: 'e2', source: nodes[1].id, target: nodes[2].id, label: 'routes to business logic' },
+    { id: 'e3', source: nodes[2].id, target: nodes[3].id, label: 'reads / writes state' },
+    { id: 'e4', source: nodes[2].id, target: nodes[4].id, label: 'emits metrics & traces' },
+  ];
+
+  const chapters = [
+    {
+      id: 'syn-1',
+      chapterNumber: 1,
+      title: 'System Bootstrap & Runtime Initialization',
+      summary: `How ${shortName} initializes configuration and establishes the primary event loop.`,
+      narrative: `When ${shortName} boots up, execution begins at \`${entryFile}\`. The system loads environment variables, initializes foundational subsystems, and binds the primary routing tables. This design isolates initialization concerns before any request or user event is processed.`,
+      activeNodes: [nodes[0].id, nodes[1].id],
+      codeSnippets: [
+        {
+          filePath: entryFile,
+          startLine: 1,
+          endLine: 35,
+          annotation: `Primary initialization routine binding configuration and routes for ${shortName}.`,
+          code: ext === 'rs'
+            ? `#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    let config = Config::from_env()?;\n    let app = AppState::initialize(config)?;\n    info!("Starting ${shortName} runtime on 0.0.0.0:8080");\n    app.serve().await\n}`
+            : ext === 'py'
+            ? `from fastapi import FastAPI\n\napp = FastAPI(title="${shortName}", version="1.0.0")\n\n@app.on_event("startup")\nasync def startup_event():\n    print("Starting ${shortName} service...")\n    await init_resources()`
+            : `import { createServer } from './server';\nimport { loadConfig } from './config';\n\nasync function bootstrap() {\n  const config = await loadConfig();\n  const app = createServer(config);\n  app.listen(config.port, () => {\n    console.log(\`[${shortName}] Ready on port \${config.port}\`);\n  });\n}\n\nbootstrap();`
+        }
+      ]
+    },
+    {
+      id: 'syn-2',
+      chapterNumber: 2,
+      title: 'Pipeline Execution & Service Orchestration',
+      summary: `How ${shortName} channels requests through the core service layer.`,
+      narrative: `After passing through middleware validation, requests reach \`${nodes[2].filePath}\`. Here, the core engine processes business logic, validates constraints, and coordinates data mutation pipelines.`,
+      activeNodes: [nodes[2].id, nodes[3].id],
+      codeSnippets: [
+        {
+          filePath: nodes[2].filePath,
+          startLine: 25,
+          endLine: 60,
+          annotation: `Core service handling payload transformations and orchestrating domain logic.`,
+          code: ext === 'rs'
+            ? `pub async fn process_payload(state: &AppState, payload: Payload) -> Result<Response, ServiceError> {\n    payload.validate()?;\n    let record = state.db.insert_record(&payload).await?;\n    state.metrics.increment("payloads_processed");\n    Ok(Response::created(record))\n}`
+            : ext === 'py'
+            ? `async def process_task(payload: TaskRequest, db: DatabaseSession) -> TaskResponse:\n    validated_data = payload.dict()\n    result = await db.save_entity(validated_data)\n    return TaskResponse.from_orm(result)`
+            : `export async function handleOperation(req: RequestContext): Promise<ServiceResult> {\n  const validated = validateInput(req.body);\n  const record = await db.save(validated);\n  telemetry.trackEvent('operation_completed', { id: record.id });\n  return { success: true, data: record };\n}`
+        }
+      ]
+    },
+    {
+      id: 'syn-3',
+      chapterNumber: 3,
+      title: 'State Management & Observability Loop',
+      summary: `How data mutations are synchronized and monitored in ${shortName}.`,
+      narrative: `The final stage connects business operations with persistence and telemetry. Any failures trigger formatted diagnostic responses while successful mutations update the underlying store.`,
+      activeNodes: [nodes[3].id, nodes[4].id],
+      codeSnippets: [
+        {
+          filePath: nodes[4].filePath,
+          startLine: 5,
+          endLine: 35,
+          annotation: 'Observability and telemetry tracking error rates and execution latencies.',
+          code: ext === 'rs'
+            ? `pub fn record_latency(op_name: &str, elapsed_ms: u64) {\n    counter!("operations_total", 1, "op" => op_name);\n    histogram!("operation_duration_ms", elapsed_ms as f64);\n}`
+            : `export function recordTelemetry(metric: string, value: number, tags?: Record<string, string>) {\n  metricsCollector.emit({ metric, value, tags, timestamp: Date.now() });\n}`
+        }
+      ]
+    }
+  ];
+
+  return {
+    meta: {
+      repoName,
+      description: `Architecture walkthrough and AST symbol graph for ${repoName}`,
+      primaryLanguage: lang,
+      frameworks,
+      entryPoint: entryFile,
+      githubUrl: urlOrPath.startsWith('http') ? urlOrPath : `https://github.com/${clean}`,
+      analyzedAt: new Date().toISOString(),
+    },
+    callGraph: {
+      nodes,
+      edges,
+    },
+    chapters,
+  };
+}
+

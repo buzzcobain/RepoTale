@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/buzzcobain/RepoTale/discussions
+    about: Ask architectural questions, share ideas, and connect with other contributors.
+  - name: 🛡️ Security Vulnerability Reporting
+    url: https://github.com/buzzcobain/RepoTale/security/advisories/new
+    about: Privately disclose sensitive security vulnerabilities.

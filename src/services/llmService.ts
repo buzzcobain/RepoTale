@@ -2,28 +2,56 @@ import { RepoTaleStory } from '../types/story';
 import { LLMProvider, ModelOption, SymbolContext } from '../types/api';
 
 export const AVAILABLE_MODELS: ModelOption[] = [
-  // Local Tier
+  // Local Tier (Ollama localhost:11434)
   {
-    id: 'qwen2.5-coder:1.5b',
-    name: 'Qwen 2.5 Coder (1.5B)',
+    id: 'qwen2.5-coder:14b',
+    name: 'Qwen 2.5 Coder (14B) — Balanced (Recommended, 16GB+ RAM)',
     provider: 'ollama',
     tier: 'local',
     contextWindow: 32768,
     recommended: true,
   },
   {
-    id: 'qwen2.5-coder:3b',
-    name: 'Qwen 2.5 Coder (3B)',
+    id: 'qwen2.5-coder:32b',
+    name: 'Qwen 2.5 Coder (32B) — High Capacity (32GB+ RAM)',
     provider: 'ollama',
     tier: 'local',
     contextWindow: 32768,
   },
   {
-    id: 'llama3.2:3b',
-    name: 'Llama 3.2 (3B)',
+    id: 'deepseek-r1:14b',
+    name: 'DeepSeek R1 (14B Reasoning) — Chain-of-Thought (16GB+ RAM)',
+    provider: 'ollama',
+    tier: 'local',
+    contextWindow: 65536,
+  },
+  {
+    id: 'deepseek-r1:32b',
+    name: 'DeepSeek R1 (32B Reasoning) — High Capacity (32GB+ RAM)',
+    provider: 'ollama',
+    tier: 'local',
+    contextWindow: 65536,
+  },
+  {
+    id: 'llama3.3:70b',
+    name: 'Llama 3.3 (70B) — Frontier Coding & Reasoning (64GB+ RAM)',
     provider: 'ollama',
     tier: 'local',
     contextWindow: 128000,
+  },
+  {
+    id: 'llama3.2:latest',
+    name: 'Llama 3.2 (3B) — Lightweight & Fast (8GB+ RAM)',
+    provider: 'ollama',
+    tier: 'local',
+    contextWindow: 128000,
+  },
+  {
+    id: 'qwen2.5-coder:1.5b',
+    name: 'Qwen 2.5 Coder (1.5B) — Minimal Footprint (<8GB RAM)',
+    provider: 'ollama',
+    tier: 'local',
+    contextWindow: 32768,
   },
   // Cloud Tier
   {
@@ -67,8 +95,16 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 
 export async function checkOllamaHealth(baseUrl = 'http://localhost:11434'): Promise<string[]> {
   try {
-    const res = await fetch(`${baseUrl}/api/tags`);
-    if (!res.ok) return [];
+    let res: Response | null = null;
+    try {
+      res = await fetch('/api/ollama/api/tags');
+    } catch {
+      // fallback to direct baseUrl
+    }
+    if (!res || !res.ok) {
+      res = await fetch(`${baseUrl}/api/tags`);
+    }
+    if (!res || !res.ok) return [];
     const data = await res.json();
     return (data.models || []).map((m: any) => m.name);
   } catch {
@@ -116,16 +152,32 @@ export async function generateStoryWithLLM(params: {
   }
 
   if (params.provider === 'ollama') {
-    const res = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: params.model || 'qwen2.5-coder:1.5b',
-        prompt: systemPrompt,
-        format: 'json',
-        stream: false,
-      })
+    let res: Response | null = null;
+    const reqBody = JSON.stringify({
+      model: params.model || 'qwen2.5-coder:1.5b',
+      prompt: systemPrompt,
+      format: 'json',
+      stream: false,
     });
+
+    try {
+      res = await fetch('/api/ollama/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: reqBody,
+      });
+    } catch {
+      // proxy fallback
+    }
+
+    if (!res || !res.ok) {
+      res = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: reqBody,
+      });
+    }
+
     if (!res.ok) throw new Error(`Ollama API error: ${await res.text()}`);
     const data = await res.json();
     return JSON.parse(data.response);

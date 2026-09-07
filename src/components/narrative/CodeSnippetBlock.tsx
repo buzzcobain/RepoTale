@@ -4,9 +4,10 @@ import { Copy, Check, FileCode, Tag } from 'lucide-react';
 
 interface CodeSnippetBlockProps {
   snippet: CodeSnippet;
+  isHighlighted?: boolean;
 }
 
-export const CodeSnippetBlock: React.FC<CodeSnippetBlockProps> = ({ snippet }) => {
+export const CodeSnippetBlock: React.FC<CodeSnippetBlockProps> = ({ snippet, isHighlighted }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -18,15 +19,32 @@ export const CodeSnippetBlock: React.FC<CodeSnippetBlockProps> = ({ snippet }) =
   const fileName = snippet.filePath.split('/').pop() || snippet.filePath;
 
   return (
-    <div className="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-xl">
+    <div
+      className={`mt-4 rounded-xl bg-slate-950 overflow-hidden shadow-xl transition-all duration-300 ${
+        isHighlighted
+          ? 'border-2 border-indigo-400 ring-4 ring-indigo-500/30 shadow-indigo-500/20 scale-[1.01]'
+          : 'border border-slate-800/90'
+      }`}
+    >
       {/* File Header bar */}
-      <div className="flex items-center justify-between px-3.5 py-2 bg-slate-900/90 border-b border-slate-800/80 text-xs">
+      <div
+        className={`flex items-center justify-between px-3.5 py-2 border-b text-xs ${
+          isHighlighted
+            ? 'bg-indigo-950/80 border-indigo-400/40'
+            : 'bg-slate-900/90 border-slate-800/80'
+        }`}
+      >
         <div className="flex items-center gap-2 font-mono text-slate-300">
-          <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="font-semibold text-slate-200">{fileName}</span>
+          <FileCode className={`w-3.5 h-3.5 ${isHighlighted ? 'text-indigo-300' : 'text-indigo-400'}`} />
+          <span className={`font-semibold ${isHighlighted ? 'text-white' : 'text-slate-200'}`}>{fileName}</span>
           <span className="text-slate-500 font-normal">
             ({snippet.filePath}) • L{snippet.startLine}-{snippet.endLine}
           </span>
+          {isHighlighted && (
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-500 text-[10px] font-bold text-white shadow-sm">
+              Selected Symbol
+            </span>
+          )}
         </div>
 
         <button
