@@ -67,31 +67,11 @@ export async function ingestRepository(
   };
 
   notify('cloning', 15, 'Initiating sandbox clone...', `Target: ${options.urlOrPath}`);
-  await new Promise(r => setTimeout(r, 450));
+  await new Promise(r => setTimeout(r, 400));
 
   const lowerUrl = options.urlOrPath.toLowerCase().trim();
 
-  // 1. Check if input matches any built-in sample stories (fastapi, tauri, express, repotale, trpc)
-  for (const [key, sampleStory] of Object.entries(SAMPLE_STORIES)) {
-    const repoMatch = sampleStory.meta.repoName.toLowerCase();
-    if (
-      lowerUrl.includes(key) ||
-      lowerUrl.includes(repoMatch) ||
-      repoMatch.includes(lowerUrl) ||
-      (key === 'repotale' && (lowerUrl.includes('repotale') || lowerUrl.includes('buzzcobain')))
-    ) {
-      notify('sniffing', 35, 'Sniffing project manifests & dependencies...', `Detected ${sampleStory.meta.primaryLanguage} (${sampleStory.meta.frameworks.join(', ')})`);
-      await new Promise(r => setTimeout(r, 400));
-      notify('ast_parsing', 65, 'Parsing Tree-sitter AST symbols & call sites...', `Extracted ${sampleStory.callGraph.nodes.length} key AST symbols`);
-      await new Promise(r => setTimeout(r, 450));
-      notify('prompting_llm', 85, `Generating chapter narratives with ${options.modelName}...`, 'Streaming structured story JSON');
-      await new Promise(r => setTimeout(r, 500));
-      notify('done', 100, `Repository story created for ${sampleStory.meta.repoName}!`);
-      return sampleStory;
-    }
-  }
-
-  // 2. Tauri desktop native backend (git clone shallow + tree-sitter AST)
+  // 1. Tauri desktop native backend (git shallow clone + Tree-sitter AST parser)
   if (isTauriEnvironment()) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
@@ -115,19 +95,19 @@ export async function ingestRepository(
       });
 
       const story: RepoTaleStory = JSON.parse(storyJsonStr);
-      notify('done', 100, 'RepoTale story generated!');
+      notify('done', 100, `RepoTale story generated with ${options.modelName}!`);
       return story;
     } catch (e: any) {
-      console.warn('Tauri backend call failed, attempting fallback web inference:', e);
+      console.warn('Tauri backend call failed, attempting web LLM inference:', e);
     }
   }
 
-  // 3. Fallback direct web generation if API key or local Ollama available
-  notify('sniffing', 40, 'Analyzing repository metadata...', options.urlOrPath);
+  // 2. Web Mode: Attempt live LLM generation (Ollama local or Cloud BYOK)
+  notify('sniffing', 35, 'Analyzing repository metadata...', options.urlOrPath);
   await new Promise(r => setTimeout(r, 400));
-  notify('ast_parsing', 65, 'Parsing Tree-sitter AST symbols & call sites...', options.urlOrPath);
-  await new Promise(r => setTimeout(r, 400));
-  notify('prompting_llm', 80, `Connecting to ${options.provider} (${options.modelName})...`);
+  notify('ast_parsing', 65, 'Extracting architectural components & call sites...', options.urlOrPath);
+  await new Promise(r => setTimeout(r, 450));
+  notify('prompting_llm', 85, `Prompting ${options.provider.toUpperCase()} (${options.modelName})...`, 'Streaming structured story JSON');
 
   try {
     const generatedStory = await generateStoryWithLLM({
@@ -136,12 +116,28 @@ export async function ingestRepository(
       model: options.modelName,
       apiKey: options.apiKey
     });
-    notify('done', 100, 'Completed!');
+    notify('done', 100, `Successfully analyzed ${options.urlOrPath} with ${options.modelName}!`);
     return generatedStory;
   } catch (err: any) {
-    console.warn('LLM generation failed or offline, synthesizing architectural story for repository:', err);
-    notify('prompting_llm', 90, 'Synthesizing AST structure & narrative chapters...', options.urlOrPath);
-    await new Promise(r => setTimeout(r, 500));
+    console.warn('Live LLM digestion failed or offline, checking curated sample stories:', err);
+
+    // 3. Fallback: If LLM is offline, check if input matches any curated sample stories
+    for (const [key, sampleStory] of Object.entries(SAMPLE_STORIES)) {
+      const repoMatch = sampleStory.meta.repoName.toLowerCase();
+      if (
+        lowerUrl.includes(key) ||
+        lowerUrl.includes(repoMatch) ||
+        repoMatch.includes(lowerUrl) ||
+        (key === 'repotale' && (lowerUrl.includes('repotale') || lowerUrl.includes('buzzcobain')))
+      ) {
+        notify('done', 100, `Loaded curated story for ${sampleStory.meta.repoName}`);
+        return sampleStory;
+      }
+    }
+
+    // 4. Fallback: Synthesize deterministic AST structure offline
+    notify('prompting_llm', 90, 'Synthesizing offline AST structure & chapters...', options.urlOrPath);
+    await new Promise(r => setTimeout(r, 450));
     notify('done', 100, `Generated architectural story for ${options.urlOrPath}!`);
     return generateSynthesizedStory(options.urlOrPath);
   }

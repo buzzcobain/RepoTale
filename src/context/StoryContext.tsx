@@ -29,7 +29,8 @@ const StoryContext = createContext<StoryContextType | null>(null);
 
 export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings } = useSettings();
-  const [story, setStory] = useState<RepoTaleStory>(SAMPLE_STORIES['fastapi']);
+  const initialStory = SAMPLE_STORIES['repotale'] || SAMPLE_STORIES['fastapi'];
+  const [story, setStory] = useState<RepoTaleStory>(initialStory);
   const [activeChapterIndex, setActiveChapterIndex] = useState<number>(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSidecarOpen, setIsSidecarOpen] = useState<boolean>(false);
@@ -37,7 +38,7 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     {
       id: 'welcome',
       sender: 'assistant',
-      content: `👋 Welcome to RepoTale! I am your architectural copilot for **${story.meta.repoName}**.\n\nYou can ask me about call graphs, dependency flows, AST symbols, or specific implementation details in any chapter.`,
+      content: `👋 Welcome to RepoTale! I am your architectural copilot for **${initialStory.meta.repoName}**.\n\nYou can ask me about call graphs, dependency flows, AST symbols, or specific implementation details in any chapter.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
   ]);

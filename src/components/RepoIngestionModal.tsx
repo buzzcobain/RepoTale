@@ -15,7 +15,7 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
   const { settings, getKey } = useSettings();
 
   const [sourceType, setSourceType] = useState<'github' | 'local'>('github');
-  const [urlOrPath, setUrlOrPath] = useState(story?.meta?.repoName || 'tiangolo/fastapi');
+  const [urlOrPath, setUrlOrPath] = useState(story?.meta?.repoName || 'buzzcobain/RepoTale');
   const [provider, setProvider] = useState<LLMProvider>(settings.defaultProvider);
   const [selectedModelId, setSelectedModelId] = useState<string>(settings.selectedModel);
   const [ollamaStatus, setOllamaStatus] = useState<string>('');
@@ -57,10 +57,10 @@ export const RepoIngestionModal: React.FC<RepoIngestionModalProps> = ({ isOpen, 
   const costEstimate = estimateStoryCost(selectedModelId, 12000);
 
   const presets = [
+    { label: 'buzzcobain/RepoTale', desc: 'Tauri v2 + React TypeScript' },
     { label: 'tiangolo/fastapi', desc: 'Python ASGI & Pydantic' },
     { label: 'tauri-apps/tauri', desc: 'Rust Desktop & Wry' },
     { label: 'expressjs/express', desc: 'Node.js Web Router' },
-    { label: 'buzzcobain/RepoTale', desc: 'Tauri v2 + React TypeScript' },
     { label: 'trpc/trpc', desc: 'End-to-end TypeScript' },
   ];
 
