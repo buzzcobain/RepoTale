@@ -216,7 +216,17 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    pre, code { font-family: 'Fira Code', monospace; }
+    /* Hide Netlify Drawer / HUD badge */
+    #netlify-hud,
+    netlify-drawer,
+    div[id*="netlify"],
+    iframe[src*="netlify"],
+    [data-netlify-hud] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
     .active-card {
       border-color: #6366f1 !important;
       box-shadow: 0 0 35px rgba(99, 102, 241, 0.35);
