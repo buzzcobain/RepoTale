@@ -151,7 +151,8 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <link rel="canonical" href="https://repotale.com/">
 
   <!-- Favicon & Brand -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='512' height='512' viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='p' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='55%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2334d399'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Crect width='504' height='504' x='4' y='4' rx='108' stroke='%23334155' stroke-width='4' opacity='0.5'/%3E%3Cg transform='translate(0, 10)'%3E%3Cpath d='M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z' fill='url(%23p)' opacity='0.95'/%3E%3Cpath d='M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z' fill='url(%23p)' opacity='0.75'/%3E%3Cpath d='M 180 350 C 180 260 210 210 295 200' stroke='url(%23b)' stroke-width='26' stroke-linecap='round'/%3E%3Cline x1='180' y1='160' x2='180' y2='360' stroke='%23ffffff' stroke-width='24' stroke-linecap='round'/%3E%3Ccircle cx='180' cy='355' r='22' fill='%230f172a' stroke='%23ffffff' stroke-width='12'/%3E%3Ccircle cx='180' cy='165' r='22' fill='%230f172a' stroke='%23ffffff' stroke-width='12'/%3E%3Ccircle cx='310' cy='200' r='26' fill='url(%23b)' stroke='%230f172a' stroke-width='8'/%3E%3C/g%3E%3C/svg%3E">
   <meta name="theme-color" content="#020617">
   <meta name="color-scheme" content="dark">
 
@@ -267,8 +268,31 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <!-- Header -->
   <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30 text-sm">
-        🧭
+      <div class="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/25 shrink-0">
+        <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+          <defs>
+            <linearGradient id="rt-hdr-p" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="55%" stop-color="#6366f1" />
+              <stop offset="100%" stop-color="#a855f7" />
+            </linearGradient>
+            <linearGradient id="rt-hdr-b" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#34d399" />
+              <stop offset="100%" stop-color="#38bdf8" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="112" fill="#0f172a" />
+          <rect width="504" height="504" x="4" y="4" rx="108" stroke="#334155" stroke-width="4" opacity="0.5" />
+          <g transform="translate(0, 10)">
+            <path d="M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z" fill="url(#rt-hdr-p)" opacity="0.95" />
+            <path d="M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z" fill="url(#rt-hdr-p)" opacity="0.75" />
+            <path d="M 180 350 C 180 260 210 210 295 200" stroke="url(#rt-hdr-b)" stroke-width="26" stroke-linecap="round" />
+            <line x1="180" y1="160" x2="180" y2="360" stroke="#ffffff" stroke-width="24" stroke-linecap="round" />
+            <circle cx="180" cy="355" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
+            <circle cx="180" cy="165" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
+            <circle cx="310" cy="200" r="26" fill="url(#rt-hdr-b)" stroke="#0f172a" stroke-width="8" />
+          </g>
+        </svg>
       </div>
       <div>
         <div class="flex items-center gap-2">
@@ -302,18 +326,55 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       <section class="p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
         <div class="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-[11px] font-medium mb-3">
-          <span>✨</span>
-          <span>Open-Source Codebase Storytelling</span>
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
+          <div class="flex-1">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-[11px] font-medium mb-3">
+              <span>✨</span>
+              <span>Open-Source Codebase Storytelling</span>
+            </div>
+
+            <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
+              Turn complex codebases into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">interactive visual stories</span>.
+            </h1>
+
+            <p class="mt-3 text-sm text-slate-300 leading-relaxed">
+              RepoTale solves the cognitive overload of onboarding into unfamiliar repositories. It ingests your project, extracts the AST call graph, and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
+            </p>
+          </div>
+
+          <!-- Featured Logo Lockup -->
+          <div class="hidden md:flex shrink-0 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-2xl">
+            <svg width="115" height="144" viewBox="0 0 512 640" fill="none" xmlns="http://www.w3.org/2000/svg" class="rounded-xl">
+              <defs>
+                <linearGradient id="rt-hero-p" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#38bdf8" />
+                  <stop offset="55%" stop-color="#6366f1" />
+                  <stop offset="100%" stop-color="#a855f7" />
+                </linearGradient>
+                <linearGradient id="rt-hero-b" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="100%" stop-color="#38bdf8" />
+                </linearGradient>
+              </defs>
+              <rect width="512" height="640" rx="48" fill="#0f172a" />
+              <rect width="504" height="632" x="4" y="4" rx="44" stroke="#334155" stroke-width="2" opacity="0.5" />
+              <g transform="translate(0, -20)">
+                <path d="M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z" fill="url(#rt-hero-p)" opacity="0.95" />
+                <path d="M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z" fill="url(#rt-hero-p)" opacity="0.75" />
+                <path d="M 180 350 C 180 260 210 210 295 200" stroke="url(#rt-hero-b)" stroke-width="26" stroke-linecap="round" />
+                <line x1="180" y1="160" x2="180" y2="360" stroke="#ffffff" stroke-width="24" stroke-linecap="round" />
+                <circle cx="180" cy="355" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
+                <circle cx="180" cy="165" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
+                <circle cx="310" cy="200" r="26" fill="url(#rt-hero-b)" stroke="#0f172a" stroke-width="8" />
+              </g>
+              <text x="256" y="490" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="62" letter-spacing="-1.5">
+                <tspan fill="#f8fafc" font-weight="800">Repo</tspan>
+                <tspan fill="url(#rt-hero-p)" font-weight="700">Tale</tspan>
+              </text>
+              <text x="256" y="535" text-anchor="middle" font-family="system-ui, -apple-system, monospace" font-size="16" font-weight="600" letter-spacing="5" fill="#94a3b8">CODEBASE STORIES</text>
+            </svg>
+          </div>
         </div>
-
-        <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-          Turn complex codebases into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">interactive visual stories</span>.
-        </h1>
-
-        <p class="mt-3 text-sm text-slate-300 leading-relaxed">
-          RepoTale solves the cognitive overload of onboarding into unfamiliar repositories. It ingests your project, extracts the AST call graph, and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
-        </p>
 
         <!-- 3 Feature Pillars -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">

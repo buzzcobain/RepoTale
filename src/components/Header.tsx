@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStory } from '../context/StoryContext';
-import { Compass, GitBranch, Download, Settings, Plus, Sparkles } from 'lucide-react';
+import { GitBranch, Download, Settings, Plus, Sparkles } from 'lucide-react';
+import { RepoTaleLogoIcon } from './common/RepoTaleLogo';
 import { RepoIngestionModal } from './RepoIngestionModal';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './export/ExportModal';
@@ -17,9 +18,7 @@ export const Header: React.FC = () => {
         {/* Left: Brand & Active Repo */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
-              <Compass className="w-5 h-5" />
-            </div>
+            <RepoTaleLogoIcon size={38} className="shrink-0 shadow-lg shadow-indigo-500/25 rounded-xl" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base text-white tracking-tight">RepoTale</span>
