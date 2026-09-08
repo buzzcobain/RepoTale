@@ -82,13 +82,132 @@ export function generateMarkdownReadme(story: RepoTaleStory, options: ExportOpti
 
 export function generateStandaloneHtml(story: RepoTaleStory): string {
   const jsonState = JSON.stringify(story).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  const githubUrl = story.meta.githubUrl || 'https://github.com/buzzcobain/RepoTale';
+  const pageTitle = `${story.meta.repoName} — Architecture & Interactive Code Tour | RepoTale`;
+  const metaDescription = `${story.meta.repoName}: ${story.meta.description || 'Interactive codebase walkthrough and visual architecture tour'}. Explore the AST call graph, key entry points, and step-by-step developer guide powered by RepoTale.`;
+  const keywords = `RepoTale, ${story.meta.repoName}, codebase visualizer, software architecture, interactive code walkthrough, call graph visualizer, AST analyzer, code documentation, developer onboarding, ${story.meta.primaryLanguage}, ${(story.meta.frameworks || []).join(', ')}`;
+
+  const escapeXml = (unsafe: string) =>
+    (unsafe || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  const preRenderedChapters = (story.chapters || []).map((chap, i) => {
+    let snippets = '';
+    (chap.codeSnippets || []).forEach((s, sIdx) => {
+      snippets += `
+        <div id="snippet-${i}-${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
+          <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
+            <div class="flex items-center gap-2 truncate">
+              <span>📄</span>
+              <span class="truncate">${escapeXml(s.filePath)}:${s.startLine}-${s.endLine}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-indigo-400 font-sans font-medium hidden sm:inline">${escapeXml(s.annotation || '')}</span>
+              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="${escapeXml(s.code)}">Copy</button>
+            </div>
+          </div>
+          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>${escapeXml(s.code)}</code></pre>
+        </div>
+      `;
+    });
+
+    return `
+      <div id="chapter-card-${i}" class="chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700" data-index="${i}">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter ${chap.chapterNumber}</span>
+          <h3 class="text-lg font-bold text-white tracking-tight">${escapeXml(chap.title)}</h3>
+        </div>
+        <p class="text-sm font-medium text-slate-300 mb-3">${escapeXml(chap.summary)}</p>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">${escapeXml(chap.narrative)}</p>
+        <div class="flex flex-wrap gap-1.5 mb-2">
+          ${(chap.activeNodes || []).map(nodeId => `
+            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('${escapeXml(nodeId)}')">
+              ${escapeXml(nodeId.split(':').pop() || nodeId)}
+            </span>
+          `).join('')}
+        </div>
+        ${snippets}
+      </div>
+    `;
+  }).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RepoTale — ${story.meta.repoName}</title>
+
+  <!-- Primary SEO Meta Tags -->
+  <title>${escapeXml(pageTitle)}</title>
+  <meta name="title" content="${escapeXml(pageTitle)}">
+  <meta name="description" content="${escapeXml(metaDescription)}">
+  <meta name="keywords" content="${escapeXml(keywords)}">
+  <meta name="author" content="RepoTale">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://repotale.com/">
+
+  <!-- Favicon & Brand -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+  <meta name="theme-color" content="#020617">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Open Graph / Facebook / LinkedIn / Discord -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://repotale.com/">
+  <meta property="og:site_name" content="RepoTale">
+  <meta property="og:title" content="${escapeXml(pageTitle)}">
+  <meta property="og:description" content="${escapeXml(metaDescription)}">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://repotale.com/">
+  <meta name="twitter:title" content="${escapeXml(pageTitle)}">
+  <meta name="twitter:description" content="${escapeXml(metaDescription)}">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "RepoTale",
+        "url": "https://repotale.com",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web, macOS, Windows, Linux",
+        "description": "Interactive, local-first codebase storytelling & AST architecture visualizer.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "TechArticle",
+        "headline": "${escapeXml(story.meta.repoName)} Interactive Architecture Walkthrough",
+        "description": "${escapeXml(metaDescription)}",
+        "url": "https://repotale.com",
+        "author": {
+          "@type": "Organization",
+          "name": "RepoTale",
+          "url": "https://repotale.com"
+        },
+        "about": {
+          "@type": "SoftwareSourceCode",
+          "name": "${escapeXml(story.meta.repoName)}",
+          "programmingLanguage": "${escapeXml(story.meta.primaryLanguage)}",
+          "codeRepository": "${escapeXml(githubUrl)}"
+        }
+      }
+    ]
+  }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -160,9 +279,12 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       </div>
     </div>
     <div class="flex items-center gap-3">
-      <a href="https://repotale.com" target="_blank" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5">
-        <span>RepoTale Studio</span>
-        <span>↗</span>
+      <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 transition-all shadow-sm flex items-center gap-2 group">
+        <svg class="w-4 h-4 fill-current text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        <span>GitHub</span>
+        <span class="text-slate-400 group-hover:text-slate-200">↗</span>
       </a>
     </div>
   </header>
@@ -180,8 +302,21 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
         </div>
       </div>
 
-      <!-- Chapters List -->
-      <div id="chapters-list" class="space-y-8"></div>
+      <!-- Pre-rendered Chapters List (Instant Crawler & User Rendering) -->
+      <div id="chapters-list" class="space-y-8">
+        ${preRenderedChapters}
+      </div>
+
+      <!-- SEO & Open Source Backlink Footer -->
+      <footer class="pt-8 pb-4 border-t border-slate-800/60 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>
+          Generated by <a href="https://repotale.com" class="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-2">RepoTale</a> — Open-source codebase storytelling & visual architecture visualizer.
+        </p>
+        <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-slate-200 flex items-center gap-1">
+          <span>GitHub</span>
+          <span>↗</span>
+        </a>
+      </footer>
     </div>
 
     <!-- Right Dynamic Graph Canvas -->
@@ -725,52 +860,6 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       renderGraph();
       fitView(true);
     };
-
-    // Render Chapters
-    const chaptersList = document.getElementById('chapters-list');
-    (STORY.chapters || []).forEach((chap, i) => {
-      const card = document.createElement('div');
-      card.id = \`chapter-card-\${i}\`;
-      card.className = 'chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700';
-      card.setAttribute('data-index', i);
-
-      let snippets = '';
-      (chap.codeSnippets || []).forEach((s, sIdx) => {
-        snippets += \`
-          <div id="snippet-\${i}-\${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
-            <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-              <div class="flex items-center gap-2 truncate">
-                <span>📄</span>
-                <span class="truncate">\${escapeHtml(s.filePath)}:\${s.startLine}-\${s.endLine}</span>
-              </div>
-              <div class="flex items-center gap-3 shrink-0">
-                <span class="text-indigo-400 font-sans font-medium hidden sm:inline">\${escapeHtml(s.annotation || '')}</span>
-                <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="\${escapeHtml(s.code)}">Copy</button>
-              </div>
-            </div>
-            <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>\${escapeHtml(s.code)}</code></pre>
-          </div>
-        \`;
-      });
-
-      card.innerHTML = \`
-        <div class="flex items-center gap-3 mb-3">
-          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter \${chap.chapterNumber}</span>
-          <h3 class="text-lg font-bold text-white tracking-tight">\${escapeHtml(chap.title)}</h3>
-        </div>
-        <p class="text-sm font-medium text-slate-300 mb-3">\${escapeHtml(chap.summary)}</p>
-        <p class="text-sm text-slate-400 leading-relaxed mb-4">\${escapeHtml(chap.narrative)}</p>
-        <div class="flex flex-wrap gap-1.5 mb-2">
-          \${(chap.activeNodes || []).map(nodeId => \`
-            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('\${escapeHtml(nodeId)}')">
-              \${escapeHtml(nodeId.split(':').pop())}
-            </span>
-          \`).join('')}
-        </div>
-        \${snippets}
-      \`;
-      chaptersList.appendChild(card);
-    });
 
     window.focusNode = function(nid) {
       selectedNodeId = nid;
