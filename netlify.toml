@@ -2,7 +2,7 @@
 
 [build]
   publish = "docs"
-  command = "npm run build:docs"
+  command = "npm run build"
 
 # SPA / Clean URL redirect fallback
 [[redirects]]

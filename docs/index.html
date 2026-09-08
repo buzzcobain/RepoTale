@@ -365,48 +365,50 @@
           <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
             <div class="flex items-center gap-2 truncate">
               <span>📄</span>
-              <span class="truncate">src-tauri/src/git.rs:20-40</span>
+              <span class="truncate">src-tauri/src/git.rs:19-37</span>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <span class="text-indigo-400 font-sans font-medium hidden sm:inline">GitSandbox isolates repository files and validates URLs against shell injection.</span>
-              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="pub fn clone_repo(url: &amp;str) -&gt; Result&lt;Self&gt; {
-    let sanitized_url = sanitize_git_url(url)?;
-    let sandbox = Self::new()?;
+              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="    pub fn clone_repo(url: &amp;str) -&gt; Result&lt;Self&gt; {
+        let sanitized_url = sanitize_git_url(url)?;
+        let sandbox = Self::new()?;
 
-    let status = Command::new(&quot;git&quot;)
-        .arg(&quot;clone&quot;)
-        .arg(&quot;--depth&quot;)
-        .arg(&quot;1&quot;)
-        .arg(&amp;sanitized_url)
-        .arg(&amp;sandbox.path)
-        .status()?;
+        let status = Command::new(&quot;git&quot;)
+            .arg(&quot;clone&quot;)
+            .arg(&quot;--depth&quot;)
+            .arg(&quot;1&quot;)
+            .arg(&amp;sanitized_url)
+            .arg(&amp;sandbox.path)
+            .status()
+            .map_err(|e| anyhow!(&quot;Failed to execute git command: {}. Make sure git is installed.&quot;, e))?;
 
-    if !status.success() {
-        let _ = sandbox.cleanup();
-        return Err(anyhow!(&quot;Git clone failed&quot;));
-    }
-    Ok(sandbox)
-}">Copy</button>
+        if !status.success() {
+            let _ = sandbox.cleanup();
+            return Err(anyhow!(&quot;Git clone failed with exit code: {:?}&quot;, status.code()));
+        }
+
+        Ok(sandbox)">Copy</button>
             </div>
           </div>
-          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>pub fn clone_repo(url: &amp;str) -&gt; Result&lt;Self&gt; {
-    let sanitized_url = sanitize_git_url(url)?;
-    let sandbox = Self::new()?;
+          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>    pub fn clone_repo(url: &amp;str) -&gt; Result&lt;Self&gt; {
+        let sanitized_url = sanitize_git_url(url)?;
+        let sandbox = Self::new()?;
 
-    let status = Command::new(&quot;git&quot;)
-        .arg(&quot;clone&quot;)
-        .arg(&quot;--depth&quot;)
-        .arg(&quot;1&quot;)
-        .arg(&amp;sanitized_url)
-        .arg(&amp;sandbox.path)
-        .status()?;
+        let status = Command::new(&quot;git&quot;)
+            .arg(&quot;clone&quot;)
+            .arg(&quot;--depth&quot;)
+            .arg(&quot;1&quot;)
+            .arg(&amp;sanitized_url)
+            .arg(&amp;sandbox.path)
+            .status()
+            .map_err(|e| anyhow!(&quot;Failed to execute git command: {}. Make sure git is installed.&quot;, e))?;
 
-    if !status.success() {
-        let _ = sandbox.cleanup();
-        return Err(anyhow!(&quot;Git clone failed&quot;));
-    }
-    Ok(sandbox)
-}</code></pre>
+        if !status.success() {
+            let _ = sandbox.cleanup();
+            return Err(anyhow!(&quot;Git clone failed with exit code: {:?}&quot;, status.code()));
+        }
+
+        Ok(sandbox)</code></pre>
         </div>
       
       </div>
@@ -435,40 +437,68 @@
           <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
             <div class="flex items-center gap-2 truncate">
               <span>📄</span>
-              <span class="truncate">src/context/StoryContext.tsx:70-95</span>
+              <span class="truncate">src/context/StoryContext.tsx:71-98</span>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <span class="text-indigo-400 font-sans font-medium hidden sm:inline">selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.</span>
-              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="const selectNode = (nodeId: string | null) =&gt; {
-  setSelectedNodeId(nodeId);
-  if (!nodeId) return;
+              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="  const selectNode = (nodeId: string | null) =&gt; {
+    setSelectedNodeId(nodeId);
+    if (!nodeId) return;
 
-  const targetChapterIdx = story.chapters.findIndex((chap) =&gt;
-    chap.activeNodes.includes(nodeId)
-  );
+    // Find the chapter that features this node in activeNodes or matches its file/symbol
+    const symbolLabel = nodeId.split(&#039;:&#039;).pop() || &#039;&#039;;
+    const targetChapterIdx = story.chapters.findIndex((chap) =&gt; {
+      if (chap.activeNodes.includes(nodeId)) return true;
+      return chap.codeSnippets.some(
+        (s) =&gt; nodeId.includes(s.filePath) || (symbolLabel &amp;&amp; s.code.includes(symbolLabel))
+      );
+    });
 
-  if (targetChapterIdx !== -1) {
-    setActiveChapterIndex(targetChapterIdx);
-    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);
-    card?.scrollIntoView({ behavior: &#039;smooth&#039;, block: &#039;start&#039; });
-  }
-};">Copy</button>
+    if (targetChapterIdx !== -1) {
+      setActiveChapterIndex(targetChapterIdx);
+      setTimeout(() =&gt; {
+        const card = document.getElementById(`chapter-card-${targetChapterIdx}`);
+        if (card) {
+          card.scrollIntoView({ behavior: &#039;smooth&#039;, block: &#039;start&#039; });
+          // Highlight card temporarily
+          card.classList.add(&#039;ring-4&#039;, &#039;ring-indigo-400/80&#039;, &#039;border-indigo-400&#039;);
+          setTimeout(() =&gt; {
+            card.classList.remove(&#039;ring-4&#039;, &#039;ring-indigo-400/80&#039;, &#039;border-indigo-400&#039;);
+          }, 2500);
+        }
+      }, 50);
+    }
+  };">Copy</button>
             </div>
           </div>
-          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>const selectNode = (nodeId: string | null) =&gt; {
-  setSelectedNodeId(nodeId);
-  if (!nodeId) return;
+          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>  const selectNode = (nodeId: string | null) =&gt; {
+    setSelectedNodeId(nodeId);
+    if (!nodeId) return;
 
-  const targetChapterIdx = story.chapters.findIndex((chap) =&gt;
-    chap.activeNodes.includes(nodeId)
-  );
+    // Find the chapter that features this node in activeNodes or matches its file/symbol
+    const symbolLabel = nodeId.split(&#039;:&#039;).pop() || &#039;&#039;;
+    const targetChapterIdx = story.chapters.findIndex((chap) =&gt; {
+      if (chap.activeNodes.includes(nodeId)) return true;
+      return chap.codeSnippets.some(
+        (s) =&gt; nodeId.includes(s.filePath) || (symbolLabel &amp;&amp; s.code.includes(symbolLabel))
+      );
+    });
 
-  if (targetChapterIdx !== -1) {
-    setActiveChapterIndex(targetChapterIdx);
-    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);
-    card?.scrollIntoView({ behavior: &#039;smooth&#039;, block: &#039;start&#039; });
-  }
-};</code></pre>
+    if (targetChapterIdx !== -1) {
+      setActiveChapterIndex(targetChapterIdx);
+      setTimeout(() =&gt; {
+        const card = document.getElementById(`chapter-card-${targetChapterIdx}`);
+        if (card) {
+          card.scrollIntoView({ behavior: &#039;smooth&#039;, block: &#039;start&#039; });
+          // Highlight card temporarily
+          card.classList.add(&#039;ring-4&#039;, &#039;ring-indigo-400/80&#039;, &#039;border-indigo-400&#039;);
+          setTimeout(() =&gt; {
+            card.classList.remove(&#039;ring-4&#039;, &#039;ring-indigo-400/80&#039;, &#039;border-indigo-400&#039;);
+          }, 2500);
+        }
+      }, 50);
+    }
+  };</code></pre>
         </div>
       
       </div>
@@ -497,36 +527,84 @@
           <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
             <div class="flex items-center gap-2 truncate">
               <span>📄</span>
-              <span class="truncate">src-tauri/src/export.rs:258-285</span>
+              <span class="truncate">src-tauri/src/export.rs:253-288</span>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <span class="text-indigo-400 font-sans font-medium hidden sm:inline">export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.</span>
               <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="pub fn export_all(payload: &amp;ExportPayload) -&gt; Result&lt;ExportResult&gt; {
-    let readme_addition = generate_markdown_readme(&amp;payload.story_json, github_user, repo_name)?;
-    let static_html = generate_standalone_html(&amp;payload.story_json);
-    fs::write(docs_dir.join(&quot;index.html&quot;), &amp;static_html)?;
-
-    if payload.create_git_branch {
-        Command::new(&quot;git&quot;).args([&quot;checkout&quot;, &quot;-B&quot;, branch]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;add&quot;, &quot;README.md&quot;, &quot;docs/index.html&quot;]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;commit&quot;, &quot;-m&quot;, &quot;docs: add RepoTale guide&quot;]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;push&quot;, &quot;-u&quot;, &quot;origin&quot;, branch]).status()?;
+    let target = Path::new(&amp;payload.target_dir);
+    if !target.exists() {
+        return Err(anyhow!(&quot;Target repository directory does not exist&quot;));
     }
-}">Copy</button>
+
+    let github_user = payload.github_username.as_deref().unwrap_or(&quot;username&quot;);
+    let repo_name = payload.repo_name.as_deref().unwrap_or(&quot;repository&quot;);
+
+    // 1. Markdown README addition
+    let readme_addition = generate_markdown_readme(&amp;payload.story_json, github_user, repo_name)?;
+    let repotale_md_path = target.join(&quot;REPOTALE.md&quot;);
+    fs::write(&amp;repotale_md_path, &amp;readme_addition)?;
+
+    // Update README.md in place
+    if payload.update_readme.unwrap_or(true) {
+        let readme_path = target.join(&quot;README.md&quot;);
+        if readme_path.exists() {
+            let current = fs::read_to_string(&amp;readme_path).unwrap_or_default();
+            if !current.contains(&quot;RepoTale Interactive Guide&quot;) {
+                let updated = format!(&quot;{}\n\n---\n\n{}&quot;, current.trim_end(), readme_addition);
+                let _ = fs::write(&amp;readme_path, updated);
+            }
+        } else {
+            let _ = fs::write(&amp;readme_path, &amp;readme_addition);
+        }
+    }
+
+    // 2. Standalone static HTML into /docs/index.html
+    let docs_dir = target.join(&quot;docs&quot;);
+    fs::create_dir_all(&amp;docs_dir)?;
+    let static_html = payload
+        .html_content
+        .clone()
+        .unwrap_or_else(|| generate_standalone_html(&amp;payload.story_json));
+    let html_path = docs_dir.join(&quot;index.html&quot;);">Copy</button>
             </div>
           </div>
           <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>pub fn export_all(payload: &amp;ExportPayload) -&gt; Result&lt;ExportResult&gt; {
-    let readme_addition = generate_markdown_readme(&amp;payload.story_json, github_user, repo_name)?;
-    let static_html = generate_standalone_html(&amp;payload.story_json);
-    fs::write(docs_dir.join(&quot;index.html&quot;), &amp;static_html)?;
-
-    if payload.create_git_branch {
-        Command::new(&quot;git&quot;).args([&quot;checkout&quot;, &quot;-B&quot;, branch]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;add&quot;, &quot;README.md&quot;, &quot;docs/index.html&quot;]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;commit&quot;, &quot;-m&quot;, &quot;docs: add RepoTale guide&quot;]).status()?;
-        Command::new(&quot;git&quot;).args([&quot;push&quot;, &quot;-u&quot;, &quot;origin&quot;, branch]).status()?;
+    let target = Path::new(&amp;payload.target_dir);
+    if !target.exists() {
+        return Err(anyhow!(&quot;Target repository directory does not exist&quot;));
     }
-}</code></pre>
+
+    let github_user = payload.github_username.as_deref().unwrap_or(&quot;username&quot;);
+    let repo_name = payload.repo_name.as_deref().unwrap_or(&quot;repository&quot;);
+
+    // 1. Markdown README addition
+    let readme_addition = generate_markdown_readme(&amp;payload.story_json, github_user, repo_name)?;
+    let repotale_md_path = target.join(&quot;REPOTALE.md&quot;);
+    fs::write(&amp;repotale_md_path, &amp;readme_addition)?;
+
+    // Update README.md in place
+    if payload.update_readme.unwrap_or(true) {
+        let readme_path = target.join(&quot;README.md&quot;);
+        if readme_path.exists() {
+            let current = fs::read_to_string(&amp;readme_path).unwrap_or_default();
+            if !current.contains(&quot;RepoTale Interactive Guide&quot;) {
+                let updated = format!(&quot;{}\n\n---\n\n{}&quot;, current.trim_end(), readme_addition);
+                let _ = fs::write(&amp;readme_path, updated);
+            }
+        } else {
+            let _ = fs::write(&amp;readme_path, &amp;readme_addition);
+        }
+    }
+
+    // 2. Standalone static HTML into /docs/index.html
+    let docs_dir = target.join(&quot;docs&quot;);
+    fs::create_dir_all(&amp;docs_dir)?;
+    let static_html = payload
+        .html_content
+        .clone()
+        .unwrap_or_else(|| generate_standalone_html(&amp;payload.story_json));
+    let html_path = docs_dir.join(&quot;index.html&quot;);</code></pre>
         </div>
       
       </div>
@@ -620,7 +698,7 @@
   </main>
 
   <script>
-    const STORY = {"meta":{"repoName":"buzzcobain/RepoTale","description":"Interactive, local-first codebase storytelling & AST architecture visualizer","primaryLanguage":"TypeScript","frameworks":["Tauri v2","React 18","React Flow","Tree-sitter","Tailwind CSS"],"entryPoint":"src/main.tsx","githubUrl":"https://github.com/buzzcobain/RepoTale","analyzedAt":"2026-09-08T10:59:14.958Z"},"callGraph":{"nodes":[{"id":"src-tauri/src/main.rs:main","label":"Tauri Desktop Entry","type":"entry","filePath":"src-tauri/src/main.rs","lineRange":[1,10],"description":"Boots native desktop shell and registers IPC handlers"},{"id":"src-tauri/src/git.rs:GitSandbox","label":"Git Sandbox Ingestion","type":"service","filePath":"src-tauri/src/git.rs","lineRange":[15,65],"description":"Executes sanitized shallow git clones in isolated temp directories"},{"id":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"Tree-sitter AST Engine","type":"service","filePath":"src-tauri/src/ast/parser.rs","lineRange":[50,180],"description":"Extracts functions, classes, call-sites, and imports across TS, Python, and Rust"},{"id":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"React Flow Canvas","type":"service","filePath":"src/components/graph/CodeGraphCanvas.tsx","lineRange":[40,190],"description":"Dynamic visual architecture graph with Dagre layout and camera tracking"},{"id":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"Parallax Narrative Pane","type":"service","filePath":"src/components/narrative/NarrativePane.tsx","lineRange":[20,110],"description":"Chapter-driven walkthrough synchronized with graph camera via IntersectionObserver"},{"id":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"Architectural Q&A Sidecar","type":"middleware","filePath":"src/components/sidecar/QASidecarDrawer.tsx","lineRange":[30,140],"description":"Context-grounded copilot answering inquiries using active AST symbols"},{"id":"src-tauri/src/export.rs:export_all","label":"Dual-Layer Export Engine","type":"utility","filePath":"src-tauri/src/export.rs","lineRange":[250,310],"description":"Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles"}],"edges":[{"id":"e1","source":"src-tauri/src/main.rs:main","target":"src-tauri/src/git.rs:GitSandbox","label":"clones sandbox"},{"id":"e2","source":"src-tauri/src/git.rs:GitSandbox","target":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"parses AST"},{"id":"e3","source":"src-tauri/src/ast/parser.rs:RepoAstParser","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"renders layout"},{"id":"e4","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"synchronizes focus"},{"id":"e5","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"jumps to chapter on click"},{"id":"e6","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"grounds Q&A"},{"id":"e7","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src-tauri/src/export.rs:export_all","label":"exports docs"}]},"chapters":[{"id":"rep-1","chapterNumber":1,"title":"Sandboxed Git Ingestion & AST Extraction","summary":"Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.","narrative":"When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.","activeNodes":["src-tauri/src/main.rs:main","src-tauri/src/git.rs:GitSandbox","src-tauri/src/ast/parser.rs:RepoAstParser"],"codeSnippets":[{"filePath":"src-tauri/src/git.rs","startLine":20,"endLine":40,"annotation":"GitSandbox isolates repository files and validates URLs against shell injection.","code":"pub fn clone_repo(url: &str) -\u003e Result\u003cSelf\u003e {\n    let sanitized_url = sanitize_git_url(url)?;\n    let sandbox = Self::new()?;\n\n    let status = Command::new(\"git\")\n        .arg(\"clone\")\n        .arg(\"--depth\")\n        .arg(\"1\")\n        .arg(&sanitized_url)\n        .arg(&sandbox.path)\n        .status()?;\n\n    if !status.success() {\n        let _ = sandbox.cleanup();\n        return Err(anyhow!(\"Git clone failed\"));\n    }\n    Ok(sandbox)\n}"}]},{"id":"rep-2","chapterNumber":2,"title":"Bidirectional Parallax Canvas & Camera Choreography","summary":"Synchronizing scroll progress with React Flow camera animations and node click navigation.","narrative":"The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.","activeNodes":["src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","src/components/narrative/NarrativePane.tsx:NarrativePane"],"codeSnippets":[{"filePath":"src/context/StoryContext.tsx","startLine":70,"endLine":95,"annotation":"selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.","code":"const selectNode = (nodeId: string | null) =\u003e {\n  setSelectedNodeId(nodeId);\n  if (!nodeId) return;\n\n  const targetChapterIdx = story.chapters.findIndex((chap) =\u003e\n    chap.activeNodes.includes(nodeId)\n  );\n\n  if (targetChapterIdx !== -1) {\n    setActiveChapterIndex(targetChapterIdx);\n    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);\n    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });\n  }\n};"}]},{"id":"rep-3","chapterNumber":3,"title":"Context-Grounded Q&A & Dual-Layer Export","summary":"Zero-hallucination architectural queries and automated GitHub Pages exporter.","narrative":"The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.","activeNodes":["src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","src-tauri/src/export.rs:export_all"],"codeSnippets":[{"filePath":"src-tauri/src/export.rs","startLine":258,"endLine":285,"annotation":"export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.","code":"pub fn export_all(payload: &ExportPayload) -\u003e Result\u003cExportResult\u003e {\n    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;\n    let static_html = generate_standalone_html(&payload.story_json);\n    fs::write(docs_dir.join(\"index.html\"), &static_html)?;\n\n    if payload.create_git_branch {\n        Command::new(\"git\").args([\"checkout\", \"-B\", branch]).status()?;\n        Command::new(\"git\").args([\"add\", \"README.md\", \"docs/index.html\"]).status()?;\n        Command::new(\"git\").args([\"commit\", \"-m\", \"docs: add RepoTale guide\"]).status()?;\n        Command::new(\"git\").args([\"push\", \"-u\", \"origin\", branch]).status()?;\n    }\n}"}]}]};
+    const STORY = {"meta":{"repoName":"buzzcobain/RepoTale","description":"Interactive, local-first codebase storytelling & AST architecture visualizer","primaryLanguage":"TypeScript","frameworks":["Tauri v2","React 18","React Flow","Tree-sitter","Tailwind CSS"],"entryPoint":"src/main.tsx","githubUrl":"https://github.com/buzzcobain/RepoTale","analyzedAt":"2026-09-08T11:02:15.685Z"},"callGraph":{"nodes":[{"id":"src-tauri/src/main.rs:main","label":"Tauri Desktop Entry","type":"entry","filePath":"src-tauri/src/main.rs","lineRange":[1,15],"description":"Boots native desktop shell and registers IPC handlers"},{"id":"src-tauri/src/git.rs:GitSandbox","label":"Git Sandbox Ingestion","type":"service","filePath":"src-tauri/src/git.rs","lineRange":[19,37],"description":"Executes sanitized shallow git clones in isolated temp directories"},{"id":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"Tree-sitter AST Engine","type":"service","filePath":"src-tauri/src/ast/parser.rs","lineRange":[50,180],"description":"Extracts functions, classes, call-sites, and imports across TS, Python, and Rust"},{"id":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"React Flow Canvas","type":"service","filePath":"src/components/graph/CodeGraphCanvas.tsx","lineRange":[40,190],"description":"Dynamic visual architecture graph with Dagre layout and camera tracking"},{"id":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"Parallax Narrative Pane","type":"service","filePath":"src/components/narrative/NarrativePane.tsx","lineRange":[20,140],"description":"Chapter-driven walkthrough with Hero section synchronized with graph camera via IntersectionObserver"},{"id":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"Architectural Q&A Sidecar","type":"middleware","filePath":"src/components/sidecar/QASidecarDrawer.tsx","lineRange":[30,140],"description":"Context-grounded copilot answering inquiries using active AST symbols"},{"id":"src-tauri/src/export.rs:export_all","label":"Dual-Layer Export Engine","type":"utility","filePath":"src-tauri/src/export.rs","lineRange":[253,288],"description":"Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles"}],"edges":[{"id":"e1","source":"src-tauri/src/main.rs:main","target":"src-tauri/src/git.rs:GitSandbox","label":"clones sandbox"},{"id":"e2","source":"src-tauri/src/git.rs:GitSandbox","target":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"parses AST"},{"id":"e3","source":"src-tauri/src/ast/parser.rs:RepoAstParser","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"renders layout"},{"id":"e4","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"synchronizes focus"},{"id":"e5","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"jumps to chapter on click"},{"id":"e6","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"grounds Q&A"},{"id":"e7","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src-tauri/src/export.rs:export_all","label":"exports docs"}]},"chapters":[{"id":"rep-1","chapterNumber":1,"title":"Sandboxed Git Ingestion & AST Extraction","summary":"Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.","narrative":"When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.","activeNodes":["src-tauri/src/main.rs:main","src-tauri/src/git.rs:GitSandbox","src-tauri/src/ast/parser.rs:RepoAstParser"],"codeSnippets":[{"filePath":"src-tauri/src/git.rs","startLine":19,"endLine":37,"annotation":"GitSandbox isolates repository files and validates URLs against shell injection.","code":"    pub fn clone_repo(url: &str) -\u003e Result\u003cSelf\u003e {\n        let sanitized_url = sanitize_git_url(url)?;\n        let sandbox = Self::new()?;\n\n        let status = Command::new(\"git\")\n            .arg(\"clone\")\n            .arg(\"--depth\")\n            .arg(\"1\")\n            .arg(&sanitized_url)\n            .arg(&sandbox.path)\n            .status()\n            .map_err(|e| anyhow!(\"Failed to execute git command: {}. Make sure git is installed.\", e))?;\n\n        if !status.success() {\n            let _ = sandbox.cleanup();\n            return Err(anyhow!(\"Git clone failed with exit code: {:?}\", status.code()));\n        }\n\n        Ok(sandbox)"}]},{"id":"rep-2","chapterNumber":2,"title":"Bidirectional Parallax Canvas & Camera Choreography","summary":"Synchronizing scroll progress with React Flow camera animations and node click navigation.","narrative":"The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.","activeNodes":["src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","src/components/narrative/NarrativePane.tsx:NarrativePane"],"codeSnippets":[{"filePath":"src/context/StoryContext.tsx","startLine":71,"endLine":98,"annotation":"selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.","code":"  const selectNode = (nodeId: string | null) =\u003e {\n    setSelectedNodeId(nodeId);\n    if (!nodeId) return;\n\n    // Find the chapter that features this node in activeNodes or matches its file/symbol\n    const symbolLabel = nodeId.split(':').pop() || '';\n    const targetChapterIdx = story.chapters.findIndex((chap) =\u003e {\n      if (chap.activeNodes.includes(nodeId)) return true;\n      return chap.codeSnippets.some(\n        (s) =\u003e nodeId.includes(s.filePath) || (symbolLabel && s.code.includes(symbolLabel))\n      );\n    });\n\n    if (targetChapterIdx !== -1) {\n      setActiveChapterIndex(targetChapterIdx);\n      setTimeout(() =\u003e {\n        const card = document.getElementById(`chapter-card-${targetChapterIdx}`);\n        if (card) {\n          card.scrollIntoView({ behavior: 'smooth', block: 'start' });\n          // Highlight card temporarily\n          card.classList.add('ring-4', 'ring-indigo-400/80', 'border-indigo-400');\n          setTimeout(() =\u003e {\n            card.classList.remove('ring-4', 'ring-indigo-400/80', 'border-indigo-400');\n          }, 2500);\n        }\n      }, 50);\n    }\n  };"}]},{"id":"rep-3","chapterNumber":3,"title":"Context-Grounded Q&A & Dual-Layer Export","summary":"Zero-hallucination architectural queries and automated GitHub Pages exporter.","narrative":"The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.","activeNodes":["src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","src-tauri/src/export.rs:export_all"],"codeSnippets":[{"filePath":"src-tauri/src/export.rs","startLine":253,"endLine":288,"annotation":"export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.","code":"pub fn export_all(payload: &ExportPayload) -\u003e Result\u003cExportResult\u003e {\n    let target = Path::new(&payload.target_dir);\n    if !target.exists() {\n        return Err(anyhow!(\"Target repository directory does not exist\"));\n    }\n\n    let github_user = payload.github_username.as_deref().unwrap_or(\"username\");\n    let repo_name = payload.repo_name.as_deref().unwrap_or(\"repository\");\n\n    // 1. Markdown README addition\n    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;\n    let repotale_md_path = target.join(\"REPOTALE.md\");\n    fs::write(&repotale_md_path, &readme_addition)?;\n\n    // Update README.md in place\n    if payload.update_readme.unwrap_or(true) {\n        let readme_path = target.join(\"README.md\");\n        if readme_path.exists() {\n            let current = fs::read_to_string(&readme_path).unwrap_or_default();\n            if !current.contains(\"RepoTale Interactive Guide\") {\n                let updated = format!(\"{}\\n\\n---\\n\\n{}\", current.trim_end(), readme_addition);\n                let _ = fs::write(&readme_path, updated);\n            }\n        } else {\n            let _ = fs::write(&readme_path, &readme_addition);\n        }\n    }\n\n    // 2. Standalone static HTML into /docs/index.html\n    let docs_dir = target.join(\"docs\");\n    fs::create_dir_all(&docs_dir)?;\n    let static_html = payload\n        .html_content\n        .clone()\n        .unwrap_or_else(|| generate_standalone_html(&payload.story_json));\n    let html_path = docs_dir.join(\"index.html\");"}]}]};
 
     const typeConfig = {
       entry: {
