@@ -83,7 +83,8 @@ export function generateMarkdownReadme(story: RepoTaleStory, options: ExportOpti
 export function generateStandaloneHtml(story: RepoTaleStory): string {
   const jsonState = JSON.stringify(story).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
   const githubUrl = story.meta.githubUrl || 'https://github.com/buzzcobain/RepoTale';
-  const pageTitle = `${story.meta.repoName} — Architecture & Interactive Code Tour | RepoTale`;
+  const isRepoTale = story.meta.repoName === 'buzzcobain/RepoTale' || !story.meta.repoName;
+  const pageTitle = isRepoTale ? 'RepoTale' : `RepoTale — ${story.meta.repoName}`;
   const metaDescription = `${story.meta.repoName}: ${story.meta.description || 'Interactive codebase walkthrough and visual architecture tour'}. Explore the AST call graph, key entry points, and step-by-step developer guide powered by RepoTale.`;
   const keywords = `RepoTale, ${story.meta.repoName}, codebase visualizer, software architecture, interactive code walkthrough, call graph visualizer, AST analyzer, code documentation, developer onboarding, ${story.meta.primaryLanguage}, ${(story.meta.frameworks || []).join(', ')}`;
 
