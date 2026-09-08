@@ -14,6 +14,7 @@ pub struct ExportPayload {
     pub repo_name: Option<String>,
     pub update_readme: Option<bool>,
     pub push_to_remote: Option<bool>,
+    pub html_content: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -280,7 +281,10 @@ pub fn export_all(payload: &ExportPayload) -> Result<ExportResult> {
     // 2. Standalone static HTML into /docs/index.html
     let docs_dir = target.join("docs");
     fs::create_dir_all(&docs_dir)?;
-    let static_html = generate_standalone_html(&payload.story_json);
+    let static_html = payload
+        .html_content
+        .clone()
+        .unwrap_or_else(|| generate_standalone_html(&payload.story_json));
     let html_path = docs_dir.join("index.html");
     fs::write(&html_path, &static_html)?;
 

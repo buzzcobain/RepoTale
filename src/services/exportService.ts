@@ -85,6 +85,7 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   const githubUrl = story.meta.githubUrl || 'https://github.com/buzzcobain/RepoTale';
   const isRepoTale = story.meta.repoName === 'buzzcobain/RepoTale' || !story.meta.repoName;
   const pageTitle = isRepoTale ? 'RepoTale' : `RepoTale — ${story.meta.repoName}`;
+  const canonicalUrl = isRepoTale ? 'https://repotale.com/' : (story.meta.githubUrl || 'https://repotale.com/');
   const metaDescription = `${story.meta.repoName}: ${story.meta.description || 'Interactive codebase walkthrough and visual architecture tour'}. Explore the AST call graph, key entry points, and step-by-step developer guide powered by RepoTale.`;
   const keywords = `RepoTale, ${story.meta.repoName}, codebase visualizer, software architecture, interactive code walkthrough, call graph visualizer, AST analyzer, code documentation, developer onboarding, ${story.meta.primaryLanguage}, ${(story.meta.frameworks || []).join(', ')}`;
 
@@ -149,7 +150,7 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <meta name="keywords" content="${escapeXml(keywords)}">
   <meta name="author" content="RepoTale">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-  <link rel="canonical" href="https://repotale.com/">
+  <link rel="canonical" href="${escapeXml(canonicalUrl)}">
 
   <!-- Favicon & Brand -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -159,7 +160,7 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
 
   <!-- Open Graph / Facebook / LinkedIn / Discord -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://repotale.com/">
+  <meta property="og:url" content="${escapeXml(canonicalUrl)}">
   <meta property="og:site_name" content="RepoTale">
   <meta property="og:title" content="${escapeXml(pageTitle)}">
   <meta property="og:description" content="${escapeXml(metaDescription)}">
@@ -167,7 +168,7 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://repotale.com/">
+  <meta name="twitter:url" content="${escapeXml(canonicalUrl)}">
   <meta name="twitter:title" content="${escapeXml(pageTitle)}">
   <meta name="twitter:description" content="${escapeXml(metaDescription)}">
 
@@ -442,8 +443,8 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="font-medium text-emerald-300">Live Demo Below:</span>
-            <span class="text-slate-300">RepoTale exploring its own codebase</span>
+            <span class="font-medium text-emerald-300">${isRepoTale ? 'Live Demo Below:' : 'Interactive Walkthrough:'}</span>
+            <span class="text-slate-300">${isRepoTale ? 'RepoTale exploring its own codebase' : escapeXml(story.meta.repoName)}</span>
           </div>
 
           <div class="flex items-center gap-2.5">

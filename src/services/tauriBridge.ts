@@ -170,6 +170,7 @@ export async function exportRepoTaleDocs(
       const res = await invoke<any>('export_docs', {
         payload: {
           story_json: JSON.stringify(story),
+          html_content: staticHtmlContent,
           target_dir: '.',
           create_git_branch: true,
           branch_name: branch,
