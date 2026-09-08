@@ -134,11 +134,16 @@
         🧭
       </div>
       <div>
-        <h1 class="font-bold text-base text-white flex items-center gap-2">
-          buzzcobain/RepoTale
-          <span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-700/50 font-mono">TypeScript</span>
-        </h1>
-        <p class="text-xs text-slate-400 truncate max-w-md">Interactive, local-first codebase storytelling & AST architecture visualizer</p>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-sm text-white tracking-tight">RepoTale</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">v1.0</span>
+          <span class="text-slate-600 hidden sm:inline">/</span>
+          <h2 class="font-medium text-xs text-slate-300 hidden sm:flex items-center gap-1.5 font-mono">
+            buzzcobain/RepoTale
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">TypeScript</span>
+          </h2>
+        </div>
+        <p class="text-xs text-slate-400 truncate max-w-md">Interactive codebase storytelling & AST architecture visualizer</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -147,7 +152,7 @@
           <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
         </svg>
         <span>GitHub</span>
-        <span class="text-slate-400 group-hover:text-slate-200">↗</span>
+        <span class="text-xs text-amber-400">★</span>
       </a>
     </div>
   </header>
@@ -156,8 +161,73 @@
   <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
     <!-- Left Narrative Pane -->
     <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80 scroll-smooth">
-      <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-xl">
-        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Interactive Architectural Story</h2>
+      <!-- RepoTale Hero Section & Introduction -->
+      <section class="p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-[11px] font-medium mb-3">
+          <span>✨</span>
+          <span>Open-Source Codebase Storytelling</span>
+        </div>
+
+        <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
+          Turn complex codebases into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">interactive visual stories</span>.
+        </h1>
+
+        <p class="mt-3 text-sm text-slate-300 leading-relaxed">
+          RepoTale solves the cognitive overload of onboarding into unfamiliar repositories. It ingests your project, extracts the AST call graph, and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
+        </p>
+
+        <!-- 3 Feature Pillars -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">🗺️</div>
+            <h2 class="text-xs font-bold text-slate-200">Interactive Call Graph</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Dynamic visual canvas tracking entrypoints, classes, and service dependencies.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">📜</div>
+            <h2 class="text-xs font-bold text-slate-200">Parallax Narrative</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Scroll chapters as the camera choreographs to highlight active subgraphs.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">🔒</div>
+            <h2 class="text-xs font-bold text-slate-200">100% Local-First</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Tree-sitter AST parsing with sandboxed git clones and optional Ollama support.</p>
+          </div>
+        </div>
+
+        <!-- Live Demo Notice & Action Buttons -->
+        <div class="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-xs text-indigo-300">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="font-medium text-emerald-300">Live Demo Below:</span>
+            <span class="text-slate-300">RepoTale exploring its own codebase</span>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <a href="https://github.com/buzzcobain/RepoTale" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-1.5">
+              <span>View on GitHub</span>
+              <span>↗</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Architecture Overview Card -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <span>🧭</span>
+            <span>buzzcobain/RepoTale Architecture Tour</span>
+          </h2>
+          <span class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-800/40">
+            3 Chapters
+          </span>
+        </div>
         <p class="text-sm text-slate-300 leading-relaxed">Interactive, local-first codebase storytelling & AST architecture visualizer</p>
         <div class="mt-4 flex flex-wrap gap-2 text-xs">
           <span class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: src/main.tsx</span>
@@ -450,7 +520,7 @@
   </main>
 
   <script>
-    const STORY = {"meta":{"repoName":"buzzcobain/RepoTale","description":"Interactive, local-first codebase storytelling & AST architecture visualizer","primaryLanguage":"TypeScript","frameworks":["Tauri v2","React 18","React Flow","Tree-sitter","Tailwind CSS"],"entryPoint":"src/main.tsx","githubUrl":"https://github.com/buzzcobain/RepoTale","analyzedAt":"2026-09-08T10:39:32.381Z"},"callGraph":{"nodes":[{"id":"src-tauri/src/main.rs:main","label":"Tauri Desktop Entry","type":"entry","filePath":"src-tauri/src/main.rs","lineRange":[1,10],"description":"Boots native desktop shell and registers IPC handlers"},{"id":"src-tauri/src/git.rs:GitSandbox","label":"Git Sandbox Ingestion","type":"service","filePath":"src-tauri/src/git.rs","lineRange":[15,65],"description":"Executes sanitized shallow git clones in isolated temp directories"},{"id":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"Tree-sitter AST Engine","type":"service","filePath":"src-tauri/src/ast/parser.rs","lineRange":[50,180],"description":"Extracts functions, classes, call-sites, and imports across TS, Python, and Rust"},{"id":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"React Flow Canvas","type":"service","filePath":"src/components/graph/CodeGraphCanvas.tsx","lineRange":[40,190],"description":"Dynamic visual architecture graph with Dagre layout and camera tracking"},{"id":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"Parallax Narrative Pane","type":"service","filePath":"src/components/narrative/NarrativePane.tsx","lineRange":[20,110],"description":"Chapter-driven walkthrough synchronized with graph camera via IntersectionObserver"},{"id":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"Architectural Q&A Sidecar","type":"middleware","filePath":"src/components/sidecar/QASidecarDrawer.tsx","lineRange":[30,140],"description":"Context-grounded copilot answering inquiries using active AST symbols"},{"id":"src-tauri/src/export.rs:export_all","label":"Dual-Layer Export Engine","type":"utility","filePath":"src-tauri/src/export.rs","lineRange":[250,310],"description":"Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles"}],"edges":[{"id":"e1","source":"src-tauri/src/main.rs:main","target":"src-tauri/src/git.rs:GitSandbox","label":"clones sandbox"},{"id":"e2","source":"src-tauri/src/git.rs:GitSandbox","target":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"parses AST"},{"id":"e3","source":"src-tauri/src/ast/parser.rs:RepoAstParser","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"renders layout"},{"id":"e4","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"synchronizes focus"},{"id":"e5","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"jumps to chapter on click"},{"id":"e6","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"grounds Q&A"},{"id":"e7","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src-tauri/src/export.rs:export_all","label":"exports docs"}]},"chapters":[{"id":"rep-1","chapterNumber":1,"title":"Sandboxed Git Ingestion & AST Extraction","summary":"Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.","narrative":"When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.","activeNodes":["src-tauri/src/main.rs:main","src-tauri/src/git.rs:GitSandbox","src-tauri/src/ast/parser.rs:RepoAstParser"],"codeSnippets":[{"filePath":"src-tauri/src/git.rs","startLine":20,"endLine":40,"annotation":"GitSandbox isolates repository files and validates URLs against shell injection.","code":"pub fn clone_repo(url: &str) -\u003e Result\u003cSelf\u003e {\n    let sanitized_url = sanitize_git_url(url)?;\n    let sandbox = Self::new()?;\n\n    let status = Command::new(\"git\")\n        .arg(\"clone\")\n        .arg(\"--depth\")\n        .arg(\"1\")\n        .arg(&sanitized_url)\n        .arg(&sandbox.path)\n        .status()?;\n\n    if !status.success() {\n        let _ = sandbox.cleanup();\n        return Err(anyhow!(\"Git clone failed\"));\n    }\n    Ok(sandbox)\n}"}]},{"id":"rep-2","chapterNumber":2,"title":"Bidirectional Parallax Canvas & Camera Choreography","summary":"Synchronizing scroll progress with React Flow camera animations and node click navigation.","narrative":"The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.","activeNodes":["src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","src/components/narrative/NarrativePane.tsx:NarrativePane"],"codeSnippets":[{"filePath":"src/context/StoryContext.tsx","startLine":70,"endLine":95,"annotation":"selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.","code":"const selectNode = (nodeId: string | null) =\u003e {\n  setSelectedNodeId(nodeId);\n  if (!nodeId) return;\n\n  const targetChapterIdx = story.chapters.findIndex((chap) =\u003e\n    chap.activeNodes.includes(nodeId)\n  );\n\n  if (targetChapterIdx !== -1) {\n    setActiveChapterIndex(targetChapterIdx);\n    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);\n    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });\n  }\n};"}]},{"id":"rep-3","chapterNumber":3,"title":"Context-Grounded Q&A & Dual-Layer Export","summary":"Zero-hallucination architectural queries and automated GitHub Pages exporter.","narrative":"The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.","activeNodes":["src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","src-tauri/src/export.rs:export_all"],"codeSnippets":[{"filePath":"src-tauri/src/export.rs","startLine":258,"endLine":285,"annotation":"export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.","code":"pub fn export_all(payload: &ExportPayload) -\u003e Result\u003cExportResult\u003e {\n    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;\n    let static_html = generate_standalone_html(&payload.story_json);\n    fs::write(docs_dir.join(\"index.html\"), &static_html)?;\n\n    if payload.create_git_branch {\n        Command::new(\"git\").args([\"checkout\", \"-B\", branch]).status()?;\n        Command::new(\"git\").args([\"add\", \"README.md\", \"docs/index.html\"]).status()?;\n        Command::new(\"git\").args([\"commit\", \"-m\", \"docs: add RepoTale guide\"]).status()?;\n        Command::new(\"git\").args([\"push\", \"-u\", \"origin\", branch]).status()?;\n    }\n}"}]}]};
+    const STORY = {"meta":{"repoName":"buzzcobain/RepoTale","description":"Interactive, local-first codebase storytelling & AST architecture visualizer","primaryLanguage":"TypeScript","frameworks":["Tauri v2","React 18","React Flow","Tree-sitter","Tailwind CSS"],"entryPoint":"src/main.tsx","githubUrl":"https://github.com/buzzcobain/RepoTale","analyzedAt":"2026-09-08T10:40:29.822Z"},"callGraph":{"nodes":[{"id":"src-tauri/src/main.rs:main","label":"Tauri Desktop Entry","type":"entry","filePath":"src-tauri/src/main.rs","lineRange":[1,10],"description":"Boots native desktop shell and registers IPC handlers"},{"id":"src-tauri/src/git.rs:GitSandbox","label":"Git Sandbox Ingestion","type":"service","filePath":"src-tauri/src/git.rs","lineRange":[15,65],"description":"Executes sanitized shallow git clones in isolated temp directories"},{"id":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"Tree-sitter AST Engine","type":"service","filePath":"src-tauri/src/ast/parser.rs","lineRange":[50,180],"description":"Extracts functions, classes, call-sites, and imports across TS, Python, and Rust"},{"id":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"React Flow Canvas","type":"service","filePath":"src/components/graph/CodeGraphCanvas.tsx","lineRange":[40,190],"description":"Dynamic visual architecture graph with Dagre layout and camera tracking"},{"id":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"Parallax Narrative Pane","type":"service","filePath":"src/components/narrative/NarrativePane.tsx","lineRange":[20,110],"description":"Chapter-driven walkthrough synchronized with graph camera via IntersectionObserver"},{"id":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"Architectural Q&A Sidecar","type":"middleware","filePath":"src/components/sidecar/QASidecarDrawer.tsx","lineRange":[30,140],"description":"Context-grounded copilot answering inquiries using active AST symbols"},{"id":"src-tauri/src/export.rs:export_all","label":"Dual-Layer Export Engine","type":"utility","filePath":"src-tauri/src/export.rs","lineRange":[250,310],"description":"Exports GitHub README Mermaid diagrams and zero-config GitHub Pages static bundles"}],"edges":[{"id":"e1","source":"src-tauri/src/main.rs:main","target":"src-tauri/src/git.rs:GitSandbox","label":"clones sandbox"},{"id":"e2","source":"src-tauri/src/git.rs:GitSandbox","target":"src-tauri/src/ast/parser.rs:RepoAstParser","label":"parses AST"},{"id":"e3","source":"src-tauri/src/ast/parser.rs:RepoAstParser","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"renders layout"},{"id":"e4","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","label":"synchronizes focus"},{"id":"e5","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/narrative/NarrativePane.tsx:NarrativePane","label":"jumps to chapter on click"},{"id":"e6","source":"src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","target":"src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","label":"grounds Q&A"},{"id":"e7","source":"src/components/narrative/NarrativePane.tsx:NarrativePane","target":"src-tauri/src/export.rs:export_all","label":"exports docs"}]},"chapters":[{"id":"rep-1","chapterNumber":1,"title":"Sandboxed Git Ingestion & AST Extraction","summary":"Shallow git cloning into isolated temporary directories and deterministic Tree-sitter parsing.","narrative":"When a repository URL is ingested, RepoTale executes a sanitized shallow clone (`git clone --depth 1`) into an isolated temporary directory. The manifest sniffer reads dependencies, and Tree-sitter query cursors extract top-level symbols and call-sites before LLM prompting.","activeNodes":["src-tauri/src/main.rs:main","src-tauri/src/git.rs:GitSandbox","src-tauri/src/ast/parser.rs:RepoAstParser"],"codeSnippets":[{"filePath":"src-tauri/src/git.rs","startLine":20,"endLine":40,"annotation":"GitSandbox isolates repository files and validates URLs against shell injection.","code":"pub fn clone_repo(url: &str) -\u003e Result\u003cSelf\u003e {\n    let sanitized_url = sanitize_git_url(url)?;\n    let sandbox = Self::new()?;\n\n    let status = Command::new(\"git\")\n        .arg(\"clone\")\n        .arg(\"--depth\")\n        .arg(\"1\")\n        .arg(&sanitized_url)\n        .arg(&sandbox.path)\n        .status()?;\n\n    if !status.success() {\n        let _ = sandbox.cleanup();\n        return Err(anyhow!(\"Git clone failed\"));\n    }\n    Ok(sandbox)\n}"}]},{"id":"rep-2","chapterNumber":2,"title":"Bidirectional Parallax Canvas & Camera Choreography","summary":"Synchronizing scroll progress with React Flow camera animations and node click navigation.","narrative":"The left pane uses an IntersectionObserver to monitor which chapter is currently in view. When a chapter enters the viewport, it pans and zooms the React Flow canvas to center the active subgraph. In reverse, clicking any node on the diagram immediately scrolls the left pane to the chapter explaining it.","activeNodes":["src/components/graph/CodeGraphCanvas.tsx:CodeGraphCanvas","src/components/narrative/NarrativePane.tsx:NarrativePane"],"codeSnippets":[{"filePath":"src/context/StoryContext.tsx","startLine":70,"endLine":95,"annotation":"selectNode finds the matching chapter and smoothly scrolls to it with a highlight pulse.","code":"const selectNode = (nodeId: string | null) =\u003e {\n  setSelectedNodeId(nodeId);\n  if (!nodeId) return;\n\n  const targetChapterIdx = story.chapters.findIndex((chap) =\u003e\n    chap.activeNodes.includes(nodeId)\n  );\n\n  if (targetChapterIdx !== -1) {\n    setActiveChapterIndex(targetChapterIdx);\n    const card = document.getElementById(`chapter-card-${targetChapterIdx}`);\n    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });\n  }\n};"}]},{"id":"rep-3","chapterNumber":3,"title":"Context-Grounded Q&A & Dual-Layer Export","summary":"Zero-hallucination architectural queries and automated GitHub Pages exporter.","narrative":"The Q&A sidecar grounds questions against the current chapter AST symbols, ensuring answers are hallucination-free. When ready to publish, the export engine generates native GitHub README additions with Mermaid diagrams and a standalone single-file HTML viewer for GitHub Pages.","activeNodes":["src/components/sidecar/QASidecarDrawer.tsx:QASidecarDrawer","src-tauri/src/export.rs:export_all"],"codeSnippets":[{"filePath":"src-tauri/src/export.rs","startLine":258,"endLine":285,"annotation":"export_all updates README.md, generates /docs/index.html, and pushes the branch via Git/SSH.","code":"pub fn export_all(payload: &ExportPayload) -\u003e Result\u003cExportResult\u003e {\n    let readme_addition = generate_markdown_readme(&payload.story_json, github_user, repo_name)?;\n    let static_html = generate_standalone_html(&payload.story_json);\n    fs::write(docs_dir.join(\"index.html\"), &static_html)?;\n\n    if payload.create_git_branch {\n        Command::new(\"git\").args([\"checkout\", \"-B\", branch]).status()?;\n        Command::new(\"git\").args([\"add\", \"README.md\", \"docs/index.html\"]).status()?;\n        Command::new(\"git\").args([\"commit\", \"-m\", \"docs: add RepoTale guide\"]).status()?;\n        Command::new(\"git\").args([\"push\", \"-u\", \"origin\", branch]).status()?;\n    }\n}"}]}]};
 
     const typeConfig = {
       entry: {

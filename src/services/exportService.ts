@@ -271,11 +271,16 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
         🧭
       </div>
       <div>
-        <h1 class="font-bold text-base text-white flex items-center gap-2">
-          ${story.meta.repoName}
-          <span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-700/50 font-mono">${story.meta.primaryLanguage}</span>
-        </h1>
-        <p class="text-xs text-slate-400 truncate max-w-md">${story.meta.description || 'Interactive Architecture Walkthrough'}</p>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-sm text-white tracking-tight">RepoTale</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">v1.0</span>
+          <span class="text-slate-600 hidden sm:inline">/</span>
+          <h2 class="font-medium text-xs text-slate-300 hidden sm:flex items-center gap-1.5 font-mono">
+            ${story.meta.repoName}
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">${story.meta.primaryLanguage}</span>
+          </h2>
+        </div>
+        <p class="text-xs text-slate-400 truncate max-w-md">Interactive codebase storytelling & AST architecture visualizer</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -284,7 +289,7 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
           <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
         </svg>
         <span>GitHub</span>
-        <span class="text-slate-400 group-hover:text-slate-200">↗</span>
+        <span class="text-xs text-amber-400">★</span>
       </a>
     </div>
   </header>
@@ -293,8 +298,73 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
     <!-- Left Narrative Pane -->
     <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80 scroll-smooth">
-      <div class="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-xl">
-        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Interactive Architectural Story</h2>
+      <!-- RepoTale Hero Section & Introduction -->
+      <section class="p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-[11px] font-medium mb-3">
+          <span>✨</span>
+          <span>Open-Source Codebase Storytelling</span>
+        </div>
+
+        <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
+          Turn complex codebases into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">interactive visual stories</span>.
+        </h1>
+
+        <p class="mt-3 text-sm text-slate-300 leading-relaxed">
+          RepoTale solves the cognitive overload of onboarding into unfamiliar repositories. It ingests your project, extracts the AST call graph, and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
+        </p>
+
+        <!-- 3 Feature Pillars -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">🗺️</div>
+            <h2 class="text-xs font-bold text-slate-200">Interactive Call Graph</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Dynamic visual canvas tracking entrypoints, classes, and service dependencies.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">📜</div>
+            <h2 class="text-xs font-bold text-slate-200">Parallax Narrative</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Scroll chapters as the camera choreographs to highlight active subgraphs.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="text-lg mb-1.5">🔒</div>
+            <h2 class="text-xs font-bold text-slate-200">100% Local-First</h2>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Tree-sitter AST parsing with sandboxed git clones and optional Ollama support.</p>
+          </div>
+        </div>
+
+        <!-- Live Demo Notice & Action Buttons -->
+        <div class="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-xs text-indigo-300">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="font-medium text-emerald-300">Live Demo Below:</span>
+            <span class="text-slate-300">RepoTale exploring its own codebase</span>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-1.5">
+              <span>View on GitHub</span>
+              <span>↗</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Architecture Overview Card -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <span>🧭</span>
+            <span>${story.meta.repoName} Architecture Tour</span>
+          </h2>
+          <span class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-800/40">
+            ${(story.chapters || []).length} Chapters
+          </span>
+        </div>
         <p class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
         <div class="mt-4 flex flex-wrap gap-2 text-xs">
           <span class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: ${story.meta.entryPoint}</span>
