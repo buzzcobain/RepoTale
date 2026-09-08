@@ -209,6 +209,25 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   }
   </script>
 
+  <script>
+    // Suppress Netlify HUD / Powered by Netlify badge
+    (function() {
+      function neutralize() {
+        var s = document.querySelector('script[data-nf-variant]');
+        if (s) { s.dataset.nfVariant = ''; s.remove(); }
+        var f = document.getElementById('nl-badge-frame') || document.querySelector('iframe[title*="Netlify"]');
+        if (f) { f.remove(); }
+      }
+      neutralize();
+      var obs = new MutationObserver(neutralize);
+      if (document.documentElement) {
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      }
+      window.addEventListener('DOMContentLoaded', neutralize);
+      window.addEventListener('load', neutralize);
+    })();
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -216,7 +235,10 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    /* Hide Netlify Drawer / HUD badge */
+    /* Hide Netlify Drawer, HUD, and Powered by Netlify Badge */
+    #nl-badge-frame,
+    iframe[title="Powered by Netlify"],
+    iframe[id*="nl-badge"],
     #netlify-hud,
     netlify-drawer,
     div[id*="netlify"],
@@ -226,6 +248,13 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       visibility: hidden !important;
       opacity: 0 !important;
       pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      clip-path: circle(0) !important;
+      transform: scale(0) !important;
+      position: absolute !important;
+      top: -9999px !important;
+      left: -9999px !important;
     }
     .active-card {
       border-color: #6366f1 !important;
