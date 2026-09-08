@@ -80,8 +80,16 @@ export function generateMarkdownReadme(story: RepoTaleStory, options: ExportOpti
   return md;
 }
 
-export function generateStandaloneHtml(story: RepoTaleStory): string {
+export function generateStandaloneHtml(
+  story: RepoTaleStory,
+  sampleStories?: Record<string, RepoTaleStory>
+): string {
+  const allStories: Record<string, RepoTaleStory> = {
+    repotale: story,
+    ...(sampleStories || {})
+  };
   const jsonState = JSON.stringify(story).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  const jsonAllStories = JSON.stringify(allStories).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
   const githubUrl = story.meta.githubUrl || 'https://github.com/buzzcobain/RepoTale';
   const isRepoTale = story.meta.repoName === 'buzzcobain/RepoTale' || !story.meta.repoName;
   const pageTitle = isRepoTale ? 'RepoTale' : `RepoTale — ${story.meta.repoName}`;
@@ -97,45 +105,51 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-  const preRenderedChapters = (story.chapters || []).map((chap, i) => {
-    let snippets = '';
-    (chap.codeSnippets || []).forEach((s, sIdx) => {
-      snippets += `
-        <div id="snippet-${i}-${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
-          <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-            <div class="flex items-center gap-2 truncate">
-              <span>📄</span>
-              <span class="truncate">${escapeXml(s.filePath)}:${s.startLine}-${s.endLine}</span>
+  const renderedChaptersByStory: Record<string, string> = {};
+  for (const [key, st] of Object.entries(allStories)) {
+    renderedChaptersByStory[key] = (st.chapters || []).map((chap, i) => {
+      let snippets = '';
+      (chap.codeSnippets || []).forEach((s, sIdx) => {
+        snippets += `
+          <div id="snippet-${key}-${i}-${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
+            <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
+              <div class="flex items-center gap-2 truncate">
+                <span>📄</span>
+                <span class="truncate">${escapeXml(s.filePath)}:${s.startLine}-${s.endLine}</span>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <span class="text-indigo-400 font-sans font-medium hidden sm:inline">${escapeXml(s.annotation || '')}</span>
+                <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="${escapeXml(s.code)}">Copy</button>
+              </div>
             </div>
-            <div class="flex items-center gap-3 shrink-0">
-              <span class="text-indigo-400 font-sans font-medium hidden sm:inline">${escapeXml(s.annotation || '')}</span>
-              <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="${escapeXml(s.code)}">Copy</button>
-            </div>
+            <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>${escapeXml(s.code)}</code></pre>
           </div>
-          <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>${escapeXml(s.code)}</code></pre>
+        `;
+      });
+
+      return `
+        <div id="chapter-card-${i}" class="chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700" data-index="${i}">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter ${chap.chapterNumber}</span>
+            <h3 class="text-lg font-bold text-white tracking-tight">${escapeXml(chap.title)}</h3>
+          </div>
+          <p class="text-sm font-medium text-slate-300 mb-3">${escapeXml(chap.summary)}</p>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">${escapeXml(chap.narrative)}</p>
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            ${(chap.activeNodes || []).map(nodeId => `
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('${escapeXml(nodeId)}')">
+                ${escapeXml(nodeId.split(':').pop() || nodeId)}
+              </span>
+            `).join('')}
+          </div>
+          ${snippets}
         </div>
       `;
-    });
+    }).join('\n');
+  }
 
-    return `
-      <div id="chapter-card-${i}" class="chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700" data-index="${i}">
-        <div class="flex items-center gap-3 mb-3">
-          <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter ${chap.chapterNumber}</span>
-          <h3 class="text-lg font-bold text-white tracking-tight">${escapeXml(chap.title)}</h3>
-        </div>
-        <p class="text-sm font-medium text-slate-300 mb-3">${escapeXml(chap.summary)}</p>
-        <p class="text-sm text-slate-400 leading-relaxed mb-4">${escapeXml(chap.narrative)}</p>
-        <div class="flex flex-wrap gap-1.5 mb-2">
-          ${(chap.activeNodes || []).map(nodeId => `
-            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('${escapeXml(nodeId)}')">
-              ${escapeXml(nodeId.split(':').pop() || nodeId)}
-            </span>
-          `).join('')}
-        </div>
-        ${snippets}
-      </div>
-    `;
-  }).join('\n');
+  const preRenderedChapters = renderedChaptersByStory['repotale'] || renderedChaptersByStory[Object.keys(renderedChaptersByStory)[0]] || '';
+  const jsonChaptersHtmlByStory = JSON.stringify(renderedChaptersByStory).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
 
   return `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -154,7 +168,10 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
 
   <!-- Favicon & Brand -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='512' height='512' viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='p' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='55%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2334d399'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Crect width='504' height='504' x='4' y='4' rx='108' stroke='%23334155' stroke-width='4' opacity='0.5'/%3E%3Cg transform='translate(0, 10)'%3E%3Cpath d='M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z' fill='url(%23p)' opacity='0.95'/%3E%3Cpath d='M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z' fill='url(%23p)' opacity='0.75'/%3E%3Cpath d='M 180 350 C 180 260 210 210 295 200' stroke='url(%23b)' stroke-width='26' stroke-linecap='round'/%3E%3Cline x1='180' y1='160' x2='180' y2='360' stroke='%23ffffff' stroke-width='24' stroke-linecap='round'/%3E%3Ccircle cx='180' cy='355' r='22' fill='%230f172a' stroke='%23ffffff' stroke-width='12'/%3E%3Ccircle cx='180' cy='165' r='22' fill='%230f172a' stroke='%23ffffff' stroke-width='12'/%3E%3Ccircle cx='310' cy='200' r='26' fill='url(%23b)' stroke='%230f172a' stroke-width='8'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
   <meta name="theme-color" content="#020617">
   <meta name="color-scheme" content="dark">
 
@@ -417,41 +434,149 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
           </div>
         </div>
 
-        <!-- 3 Feature Pillars -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
-          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
-            <div class="text-lg mb-1.5">🗺️</div>
-            <h2 class="text-xs font-bold text-slate-200">Interactive Call Graph</h2>
-            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Dynamic visual canvas tracking entrypoints, classes, and service dependencies.</p>
+        <!-- 3-Step Lifecycle: How It Works on Any Repo -->
+        <div class="mt-6 mb-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">
+              How It Works for Your Repo
+            </span>
+            <span class="text-xs text-slate-400">From code to hosted interactive tour in 3 steps:</span>
           </div>
-          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
-            <div class="text-lg mb-1.5">📜</div>
-            <h2 class="text-xs font-bold text-slate-200">Parallax Narrative</h2>
-            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Scroll chapters as the camera choreographs to highlight active subgraphs.</p>
-          </div>
-          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
-            <div class="text-lg mb-1.5">🔒</div>
-            <h2 class="text-xs font-bold text-slate-200">100% Local-First</h2>
-            <p class="text-[11px] text-slate-400 mt-1 leading-normal">Tree-sitter AST parsing with sandboxed git clones and optional Ollama support.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
+              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
+                <span>📄</span>
+                <span>01. INGEST</span>
+              </div>
+              <h3 class="text-xs font-bold text-slate-200 mb-1">Point to Any Codebase</h3>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Provide a GitHub URL or local repository folder. Tree-sitter extracts functions, call-sites, and imports across TS, Python, Rust, and Go.
+              </p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
+              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
+                <span>🗺️</span>
+                <span>02. VISUALIZE</span>
+              </div>
+              <h3 class="text-xs font-bold text-slate-200 mb-1">Auto-Generate Story</h3>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Generates an interactive chapter-by-chapter guided walkthrough synchronized with an animated React Flow call graph.
+              </p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
+              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
+                <span>🌐</span>
+                <span>03. PUBLISH</span>
+              </div>
+              <h3 class="text-xs font-bold text-slate-200 mb-1">Host Free Anywhere</h3>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Emits a zero-dependency <code class="text-indigo-300">/docs/index.html</code>. Host 100% free on GitHub Pages, Netlify, Cloudflare, or your custom domain.
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Live Demo Notice & Action Buttons -->
-        <div class="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2 text-xs text-indigo-300">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        <!-- Dual-Layer Connection Showcase -->
+        <div class="p-4 rounded-xl bg-slate-950/80 border border-indigo-500/25 mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <span>🔗</span>
+              <span>The Dual-Layer Connection: README to Hosted Web Tour</span>
             </span>
-            <span class="font-medium text-emerald-300">${isRepoTale ? 'Live Demo Below:' : 'Interactive Walkthrough:'}</span>
-            <span class="text-slate-300">${isRepoTale ? 'RepoTale exploring its own codebase' : escapeXml(story.meta.repoName)}</span>
+            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
+              1-Click Navigation
+            </span>
+          </div>
+          <p class="text-xs text-slate-300 mb-3 leading-relaxed">
+            RepoTale adds an interactive badge to your repository's <code class="text-indigo-300 font-mono">README.md</code>. When anyone clicks it, it launches your hosted visual walkthrough on <strong>GitHub Pages</strong>, <strong>Netlify</strong>, or your own <strong>custom domain</strong> (just like this site!):
+          </p>
+          <div class="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-mono">
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-slate-400 font-sans text-[11px]">README.md badge:</span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 text-white font-bold text-[11px] shadow-sm">
+                🧭 RepoTale | Interactive Tour
+              </span>
+            </div>
+            <span class="text-indigo-400 hidden sm:inline shrink-0">➔</span>
+            <div class="flex items-center gap-1.5 text-indigo-300 truncate">
+              <span class="text-slate-400 font-sans text-[11px]">Opens web tour:</span>
+              <span class="underline decoration-indigo-500/60 underline-offset-2 truncate">
+                https://yourname.github.io/your-repo/
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons & Live Demo Switcher -->
+        <div class="pt-5 border-t border-slate-800/80 flex flex-col gap-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-xs text-indigo-300">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span class="font-medium text-emerald-300">Live Demo Below:</span>
+              <span id="live-demo-label" class="text-slate-300">${isRepoTale ? 'RepoTale analyzing its own architecture' : escapeXml(story.meta.repoName)}</span>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <a
+                href="https://github.com/buzzcobain/RepoTale#quickstart"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-1.5"
+              >
+                <span>🚀</span>
+                <span>Use on Your Repo (Free)</span>
+              </a>
+
+              <a
+                href="${githubUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700 transition-all flex items-center gap-1.5"
+              >
+                <span>View Source</span>
+                <span>↗</span>
+              </a>
+            </div>
           </div>
 
-          <div class="flex items-center gap-2.5">
-            <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-1.5">
-              <span>View on GitHub</span>
-              <span>↗</span>
-            </a>
+          <!-- Multi-Repo Live Switcher -->
+          <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Switch Live Demo:</span>
+              <span class="text-slate-400 hidden sm:inline text-xs">Explore how RepoTale visualizes different architectures:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button
+                id="btn-sample-repotale"
+                onclick="switchStory('repotale')"
+                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm"
+              >
+                <span>🧭</span>
+                <span>RepoTale (Tauri/React)</span>
+              </button>
+              <button
+                id="btn-sample-fastapi"
+                onclick="switchStory('fastapi')"
+                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                <span>⚡</span>
+                <span>FastAPI (Python)</span>
+              </button>
+              <button
+                id="btn-sample-trpc"
+                onclick="switchStory('trpc')"
+                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                <span>🔗</span>
+                <span>tRPC (TypeScript)</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -461,16 +586,18 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
             <span>🧭</span>
-            <span>${story.meta.repoName} Architecture Tour</span>
+            <span id="overview-repo-name">${story.meta.repoName} Architecture Tour</span>
           </h2>
-          <span class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-800/40">
+          <span id="overview-chapter-count" class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-800/40">
             ${(story.chapters || []).length} Chapters
           </span>
         </div>
-        <p class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
+        <p id="overview-description" class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
         <div class="mt-4 flex flex-wrap gap-2 text-xs">
-          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: ${story.meta.entryPoint}</span>
-          ${(story.meta.frameworks || []).map(f => `<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">${f}</span>`).join('')}
+          <span id="overview-entry-point" class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: ${story.meta.entryPoint}</span>
+          <div id="overview-frameworks" class="flex flex-wrap gap-2">
+            ${(story.meta.frameworks || []).map(f => `<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">${f}</span>`).join('')}
+          </div>
         </div>
       </div>
 
@@ -566,7 +693,10 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
   </main>
 
   <script>
-    const STORY = ${jsonState};
+    const ALL_STORIES = ${jsonAllStories};
+    const CHAPTERS_HTML = ${jsonChaptersHtmlByStory};
+    let currentStoryKey = 'repotale';
+    let STORY = ALL_STORIES['repotale'] || ALL_STORIES[Object.keys(ALL_STORIES)[0]] || ${jsonState};
 
     const typeConfig = {
       entry: {
@@ -1037,41 +1167,126 @@ export function generateStandaloneHtml(story: RepoTaleStory): string {
       selectedNodeId = nid;
       highlightActiveNodes(new Set([nid]));
       centerOnNodes(new Set([nid]));
+
+      const cards = document.querySelectorAll('.chapter-card');
+      for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+        const idx = parseInt(c.getAttribute('data-index'));
+        const chap = STORY.chapters[idx];
+        if (chap && (chap.activeNodes || []).includes(nid)) {
+          c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          c.classList.add('ring-4', 'ring-indigo-400');
+          setTimeout(() => c.classList.remove('ring-4', 'ring-indigo-400'), 1800);
+          break;
+        }
+      }
     };
 
-    // Parallax Scroll Spy
-    const pane = document.getElementById('narrative-pane');
-    const cards = document.querySelectorAll('.chapter-card');
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          cards.forEach(c => c.classList.remove('active-card'));
-          entry.target.classList.add('active-card');
-          const idx = parseInt(entry.target.getAttribute('data-index'));
-          const activeChap = STORY.chapters[idx];
-          if (activeChap) {
-            selectedNodeId = null;
-            document.getElementById('current-chapter-indicator').innerText = 'Chapter ' + activeChap.chapterNumber + ' Focus';
-            const nodeLabels = (activeChap.activeNodes || []).map(n => n.split(':').pop()).join(', ') || 'Global';
-            document.getElementById('active-nodes-list').innerText = nodeLabels;
+    function renderChaptersList() {
+      const container = document.getElementById('chapters-list');
+      if (!container) return;
+      container.innerHTML = CHAPTERS_HTML[currentStoryKey] || '';
+      reObserveCards();
+    }
 
-            const activeSet = new Set(activeChap.activeNodes || []);
-            highlightActiveNodes(activeSet);
-            centerOnNodes(activeSet);
+    let observer = null;
+    function reObserveCards() {
+      if (observer) {
+        observer.disconnect();
+      }
+      const pane = document.getElementById('narrative-pane');
+      const cards = document.querySelectorAll('.chapter-card');
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            cards.forEach(c => c.classList.remove('active-card'));
+            entry.target.classList.add('active-card');
+            const idx = parseInt(entry.target.getAttribute('data-index'));
+            const activeChap = STORY.chapters[idx];
+            if (activeChap) {
+              selectedNodeId = null;
+              document.getElementById('current-chapter-indicator').innerText = 'Chapter ' + activeChap.chapterNumber + ' Focus';
+              const nodeLabels = (activeChap.activeNodes || []).map(n => n.split(':').pop()).join(', ') || 'Global';
+              document.getElementById('active-nodes-list').innerText = nodeLabels;
+
+              const activeSet = new Set(activeChap.activeNodes || []);
+              highlightActiveNodes(activeSet);
+              centerOnNodes(activeSet);
+            }
+          }
+        });
+      }, { root: pane, threshold: 0.45 });
+
+      cards.forEach(c => observer.observe(c));
+    }
+
+    window.switchStory = function(key) {
+      if (!ALL_STORIES[key]) return;
+      currentStoryKey = key;
+      STORY = ALL_STORIES[key];
+
+      // Update sample switcher button styles
+      document.querySelectorAll('.sample-btn').forEach(btn => {
+        btn.className = 'sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white';
+      });
+      const activeBtn = document.getElementById('btn-sample-' + key);
+      if (activeBtn) {
+        activeBtn.className = 'sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm';
+      }
+
+      // Update Architecture Overview Card
+      const nameEl = document.getElementById('overview-repo-name');
+      if (nameEl) nameEl.innerText = (STORY.meta.repoName || 'Codebase') + ' Architecture Tour';
+      const countEl = document.getElementById('overview-chapter-count');
+      if (countEl) countEl.innerText = (STORY.chapters || []).length + ' Chapters';
+      const descEl = document.getElementById('overview-description');
+      if (descEl) descEl.innerText = STORY.meta.description || 'Explore the system architecture, call graph, and data flow below.';
+      const entryEl = document.getElementById('overview-entry-point');
+      if (entryEl) entryEl.innerText = 'Entry: ' + (STORY.meta.entryPoint || 'unknown');
+      const fwEl = document.getElementById('overview-frameworks');
+      if (fwEl) {
+        fwEl.innerHTML = (STORY.meta.frameworks || []).map(f => '<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">' + escapeHtml(f) + '</span>').join('');
+      }
+      const demoLabel = document.getElementById('live-demo-label');
+      if (demoLabel) {
+        demoLabel.innerText = key === 'repotale' ? 'RepoTale analyzing its own architecture' : (STORY.meta.repoName + ' architecture');
+      }
+
+      selectedNodeId = null;
+      renderChaptersList();
+      computeLayout(currentDirection);
+      renderGraph();
+      fitView(true);
+
+      const pane = document.getElementById('narrative-pane');
+      if (pane) {
+        pane.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      setTimeout(() => {
+        const firstCard = document.querySelector('.chapter-card');
+        if (firstCard) {
+          firstCard.classList.add('active-card');
+          const firstChap = STORY.chapters[0];
+          if (firstChap) {
+            const firstSet = new Set(firstChap.activeNodes || []);
+            highlightActiveNodes(firstSet);
+            centerOnNodes(firstSet);
           }
         }
-      });
-    }, { root: pane, threshold: 0.45 });
+      }, 100);
+    };
 
-    cards.forEach(c => observer.observe(c));
-
-    // Initialize Layout & Graph
+    // Initialize Layout, Graph & Scroll Spy
     computeLayout('TB');
     renderGraph();
+    reObserveCards();
+
     setTimeout(() => {
       fitView(false);
-      if (cards[0]) {
-        cards[0].classList.add('active-card');
+      const firstCard = document.querySelector('.chapter-card');
+      if (firstCard) {
+        firstCard.classList.add('active-card');
         const firstChap = STORY.chapters[0];
         if (firstChap) {
           const firstSet = new Set(firstChap.activeNodes || []);

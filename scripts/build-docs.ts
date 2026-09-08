@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateStandaloneHtml } from '../src/services/exportService.ts';
 import { RepoTaleStory } from '../src/types/story.ts';
+import { SAMPLE_STORIES } from '../src/services/sampleStories.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -224,8 +225,8 @@ const liveRepotaleStory: RepoTaleStory = {
   ],
 };
 
-console.log('Generating standalone interactive docs for buzzcobain/RepoTale with Hero Section...');
-const html = generateStandaloneHtml(liveRepotaleStory);
+console.log('Generating standalone interactive docs for buzzcobain/RepoTale with Hero Section & Multi-Repo Samples...');
+const html = generateStandaloneHtml(liveRepotaleStory, SAMPLE_STORIES);
 const outputPath = path.join(docsDir, 'index.html');
 fs.writeFileSync(outputPath, html, 'utf-8');
 console.log(`Successfully generated: ${outputPath} (${(html.length / 1024).toFixed(1)} KB)`);
@@ -261,5 +262,17 @@ const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
 fs.writeFileSync(sitemapPath, sitemapContent, 'utf-8');
 console.log(`Generated sitemap.xml: ${sitemapPath}`);
 
-console.log('🎉 RepoTale build completed successfully: Live codebase synced & Hero section preserved.');
+// 5. Ensure all favicon and brand assets are copied to docs/
+const publicDir = path.join(rootDir, 'public');
+if (fs.existsSync(publicDir)) {
+  const assets = fs.readdirSync(publicDir);
+  assets.forEach(asset => {
+    if (asset.startsWith('favicon') || asset.startsWith('logo') || asset.startsWith('apple-touch-icon') || asset === 'compass.svg') {
+      fs.copyFileSync(path.join(publicDir, asset), path.join(docsDir, asset));
+    }
+  });
+  console.log('Synchronized favicon and brand assets from public/ to docs/');
+}
+
+console.log('🎉 RepoTale build completed successfully: Live codebase synced, multi-repo samples embedded & favicons ready.');
 
