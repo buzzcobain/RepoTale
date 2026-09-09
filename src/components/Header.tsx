@@ -14,62 +14,62 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="h-16 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between z-30 shrink-0 select-none">
+      <header className="h-14 border-b border-base-300 bg-base-100/95 backdrop-blur-md px-5 flex items-center justify-between z-30 shrink-0 select-none">
         {/* Left: Brand & Active Repo */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3.5">
           <div className="flex items-center gap-2.5">
-            <RepoTaleLogoIcon size={38} className="shrink-0 shadow-lg shadow-indigo-500/25 rounded-xl" />
+            <RepoTaleLogoIcon size={32} className="shrink-0 rounded-lg border border-base-300" />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base text-white tracking-tight">RepoTale</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-700/50">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm text-slate-100 tracking-tight">RepoTale</span>
+                <span className="badge badge-neutral badge-xs font-mono text-[10px] px-1.5 py-0.5">
                   v1.0
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Interactive Architecture Storyteller</p>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Interactive Architecture Storyteller</p>
             </div>
           </div>
 
-          <div className="h-6 w-[1px] bg-slate-800 mx-1 hidden sm:block" />
+          <div className="h-5 w-[1px] bg-base-300 mx-1 hidden sm:block" />
 
           {/* Active Repo Indicator */}
           <button
             onClick={() => setIsIngestOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/70 hover:border-indigo-500/50 text-xs transition-all group"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-base-200 hover:bg-base-300 border border-base-300 text-xs transition-colors group"
             title="Switch or Ingest New Repository"
           >
-            <GitBranch className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold text-slate-200">{story.meta.repoName}</span>
-            <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-1.5 py-0.5 rounded">
+            <GitBranch className="w-3.5 h-3.5 text-primary group-hover:text-blue-400 transition-colors" />
+            <span className="font-medium text-slate-200">{story.meta.repoName}</span>
+            <span className="badge badge-neutral badge-xs font-mono text-[10px]">
               {story.meta.primaryLanguage}
             </span>
           </button>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {/* Ingest Repo Button */}
           <button
             onClick={() => setIsIngestOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 hover:border-slate-600 transition-all shadow-sm"
+            className="btn btn-sm bg-base-200 hover:bg-base-300 text-slate-200 border-base-300 font-medium text-xs gap-1.5"
           >
-            <Plus className="w-3.5 h-3.5 text-indigo-400" />
+            <Plus className="w-3.5 h-3.5 text-primary" />
             <span>Ingest Repo</span>
           </button>
 
           {/* Export Docs Button */}
           <button
             onClick={() => setIsExportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 hover:border-slate-600 transition-all shadow-sm"
+            className="btn btn-sm bg-base-200 hover:bg-base-300 text-slate-200 border-base-300 font-medium text-xs gap-1.5"
           >
-            <Download className="w-3.5 h-3.5 text-indigo-400" />
+            <Download className="w-3.5 h-3.5 text-slate-400" />
             <span className="hidden sm:inline">Export Guide</span>
           </button>
 
           {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+            className="btn btn-sm btn-square bg-base-200 hover:bg-base-300 text-slate-400 hover:text-slate-100 border-base-300"
             title="App Settings & API Keys"
           >
             <Settings className="w-4 h-4" />
@@ -78,17 +78,17 @@ export const Header: React.FC = () => {
           {/* Q&A Sidecar Toggle */}
           <button
             onClick={() => setIsSidecarOpen(!isSidecarOpen)}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-md ${
+            className={`btn btn-sm gap-2 font-medium text-xs ${
               isSidecarOpen
-                ? 'bg-indigo-600 text-white shadow-indigo-600/30 ring-2 ring-indigo-400'
-                : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30'
+                ? 'btn-primary shadow-sm'
+                : 'bg-base-200 hover:bg-base-300 text-slate-200 border-base-300'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Ask Codebase</span>
-            <div className="w-4 h-4 rounded-full bg-indigo-500 text-[10px] font-bold text-white flex items-center justify-center">
+            <span className="badge badge-xs badge-neutral font-mono">
               {messages.length}
-            </div>
+            </span>
           </button>
         </div>
       </header>

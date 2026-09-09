@@ -46,17 +46,17 @@ export const QASidecarDrawer: React.FC = () => {
   if (!isSidecarOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-slate-950/95 backdrop-blur-xl border-l border-slate-800 shadow-2xl flex flex-col transition-all duration-300">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-base-100 border-l border-base-300 shadow-2xl flex flex-col transition-all duration-200">
       {/* Drawer Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+      <div className="p-3.5 border-b border-base-300 flex items-center justify-between bg-base-200/70">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div className="w-8 h-8 rounded-lg bg-base-300 border border-base-300 flex items-center justify-center text-primary">
             <Bot className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
+            <h3 className="font-bold text-xs text-white flex items-center gap-1.5">
               <span>Architectural Copilot</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">
+              <span className="badge badge-xs badge-neutral font-mono text-[10px]">
                 {settings.selectedModel.split(':').pop() || settings.selectedModel}
               </span>
             </h3>
@@ -67,30 +67,30 @@ export const QASidecarDrawer: React.FC = () => {
         <div className="flex items-center gap-1">
           <button
             onClick={clearChat}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
             title="Clear chat"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setIsSidecarOpen(false)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
             title="Close drawer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Active Focus Pill Indicator */}
-      <div className="px-4 py-2 bg-indigo-950/40 border-b border-indigo-900/30 flex items-center justify-between text-[11px] text-indigo-300">
+      <div className="px-3.5 py-1.5 bg-base-200 border-b border-base-300 flex items-center justify-between text-[11px] text-slate-300 font-mono">
         <div className="flex items-center gap-1.5 truncate">
-          <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+          <Sparkles className="w-3 h-3 text-primary shrink-0" />
           <span className="font-medium truncate">
             Grounded in: Chapter {currentChapter?.chapterNumber} ({currentChapter?.title})
           </span>
         </div>
-        <span className="text-slate-400 text-[10px] shrink-0">
+        <span className="text-slate-500 text-[10px] shrink-0">
           {currentChapter?.activeNodes.length || 0} AST nodes
         </span>
       </div>
@@ -102,12 +102,12 @@ export const QASidecarDrawer: React.FC = () => {
         ))}
 
         {isAskingQuestion && (
-          <div className="flex gap-3 text-xs justify-start items-center">
-            <div className="w-7 h-7 rounded-lg bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-              <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex gap-2.5 text-xs justify-start items-center">
+            <div className="w-7 h-7 rounded-md bg-base-200 border border-base-300 flex items-center justify-center text-primary shrink-0">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             </div>
-            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 flex items-center gap-2">
-              <span className="animate-pulse">Retrieving AST symbols & grounding response...</span>
+            <div className="p-2.5 rounded-lg bg-base-200 border border-base-300 text-slate-400 flex items-center gap-2 text-xs font-mono">
+              <span>Retrieving AST symbols & grounding response...</span>
             </div>
           </div>
         )}
@@ -117,17 +117,17 @@ export const QASidecarDrawer: React.FC = () => {
 
       {/* Suggested Questions */}
       {messages.length < 3 && !isAskingQuestion && (
-        <div className="px-4 py-2 border-t border-slate-900 bg-slate-950/40">
-          <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1">
-            <HelpCircle className="w-3 h-3 text-indigo-400" />
+        <div className="px-3.5 py-2.5 border-t border-base-300 bg-base-200/50">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+            <HelpCircle className="w-3 h-3 text-primary" />
             <span>Suggested Inquiries</span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-1">
             {suggestedQuestions.map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => askQuestion(q)}
-                className="text-left text-[11px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-indigo-950/50 text-slate-300 hover:text-indigo-200 border border-slate-800 hover:border-indigo-700/50 transition-all line-clamp-1"
+                className="text-left text-[11px] font-mono px-2.5 py-1.5 rounded bg-base-100 hover:bg-base-300 text-slate-300 hover:text-white border border-base-300 transition-colors line-clamp-1"
               >
                 {q}
               </button>
@@ -137,7 +137,7 @@ export const QASidecarDrawer: React.FC = () => {
       )}
 
       {/* Question Input Form */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-800 bg-slate-900/80">
+      <form onSubmit={handleSubmit} className="p-3 border-t border-base-300 bg-base-200/60">
         <div className="relative flex items-center">
           <textarea
             value={input}
@@ -150,12 +150,13 @@ export const QASidecarDrawer: React.FC = () => {
             }}
             placeholder={`Ask about ${story.meta.repoName} architecture...`}
             rows={2}
-            className="w-full pl-3 pr-12 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-white placeholder-slate-500 resize-none font-sans"
+            className="textarea textarea-bordered textarea-sm w-full pl-3 pr-10 py-2 bg-base-100 border-base-300 focus:border-primary text-xs text-white placeholder-slate-500 resize-none font-sans"
           />
           <button
             type="submit"
             disabled={!input.trim() || isAskingQuestion}
-            className="absolute right-2.5 bottom-2.5 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-all shadow-md shadow-indigo-600/20"
+            className="btn btn-primary btn-sm h-7 min-h-0 px-2 absolute right-2 bottom-2 font-mono"
+            title="Send query"
           >
             <Send className="w-3.5 h-3.5" />
           </button>

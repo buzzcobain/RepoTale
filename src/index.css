@@ -8,28 +8,35 @@
   }
 
   body {
-    background-color: #030712;
-    color: #f8fafc;
+    background-color: #090b10;
+    color: #f1f5f9;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom scrollbars */
+  /* Linear-style refined scrollbars */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #0b111e;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 9999px;
+    background: #272a34;
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+    background: #3f4454;
+  }
+
+  ::selection {
+    background-color: #2563eb;
+    color: #ffffff;
   }
 }
 

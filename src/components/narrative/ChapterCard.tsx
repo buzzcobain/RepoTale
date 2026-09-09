@@ -2,7 +2,7 @@ import React from 'react';
 import { Chapter } from '../../types/story';
 import { useStory } from '../../context/StoryContext';
 import { CodeSnippetBlock } from './CodeSnippetBlock';
-import { Compass, Sparkles, Box } from 'lucide-react';
+import { Compass, Box } from 'lucide-react';
 
 interface ChapterCardProps {
   chapter: Chapter;
@@ -16,28 +16,27 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
   return (
     <div
       id={`chapter-card-${index}`}
-      className={`relative rounded-2xl p-6 transition-all duration-500 border ${
+      className={`relative rounded-xl p-5 transition-all duration-300 border ${
         isActive
-          ? 'bg-slate-900/80 border-indigo-500/60 shadow-2xl shadow-indigo-500/10 ring-1 ring-indigo-500/30'
-          : 'bg-slate-900/40 border-slate-800/80 opacity-75 hover:opacity-100 hover:border-slate-700'
+          ? 'bg-base-200 border-primary/70 shadow-md ring-1 ring-primary/30'
+          : 'bg-base-200/50 border-base-300 opacity-75 hover:opacity-100 hover:border-slate-700'
       }`}
     >
       {/* Chapter Number & Badges */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <span
-            className={`px-3 py-1 text-xs font-bold rounded-lg border flex items-center gap-1.5 ${
+            className={`badge badge-sm font-mono font-semibold gap-1.5 py-2.5 px-3 ${
               isActive
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-                : 'bg-slate-800 text-slate-400 border-slate-700'
+                ? 'badge-primary shadow-sm'
+                : 'badge-neutral text-slate-300'
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
             Chapter {chapter.chapterNumber}
           </span>
           {isActive && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-800/50">
-              <Sparkles className="w-3 h-3" />
+            <span className="badge badge-xs badge-outline border-primary/50 text-primary font-mono gap-1 py-1">
               Active Focus
             </span>
           )}
@@ -45,17 +44,17 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
       </div>
 
       {/* Chapter Title */}
-      <h3 className="text-xl font-bold text-white tracking-tight mb-2">
+      <h3 className="text-lg font-bold text-slate-100 tracking-tight mb-2">
         {chapter.title}
       </h3>
 
       {/* Summary */}
-      <p className="text-sm font-medium text-slate-300 mb-4 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-slate-850">
+      <p className="text-xs text-slate-300 mb-4 leading-relaxed bg-base-100/70 p-3 rounded-lg border border-base-300">
         {chapter.summary}
       </p>
 
       {/* Narrative Body */}
-      <div className="text-sm text-slate-300/90 leading-relaxed space-y-3 font-normal mb-5">
+      <div className="text-xs text-slate-300/90 leading-relaxed space-y-2.5 font-normal mb-5">
         {chapter.narrative.split('\n\n').map((paragraph, pIdx) => (
           <p key={pIdx}>{paragraph}</p>
         ))}
@@ -63,16 +62,16 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
 
       {/* Focused Node Banner if selected from diagram */}
       {selectedNodeId && (chapter.activeNodes.includes(selectedNodeId) || chapter.codeSnippets.some(s => selectedNodeId.includes(s.filePath))) && (
-        <div className="mb-4 p-3 rounded-xl bg-indigo-950/80 border border-indigo-400/50 flex items-center justify-between text-xs text-indigo-200 animate-pulse">
+        <div className="mb-4 p-2.5 rounded-lg bg-base-300/80 border border-primary/40 flex items-center justify-between text-xs text-slate-200">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
+            <span className="w-2 h-2 rounded-full bg-primary" />
             <span>
-              Explaining diagram symbol: <strong className="font-mono text-white underline">{selectedNodeId.split(':').pop()}</strong>
+              Explaining diagram symbol: <strong className="font-mono text-white">{selectedNodeId.split(':').pop()}</strong>
             </span>
           </div>
           <button
             onClick={() => selectNode(null)}
-            className="text-[11px] px-2 py-0.5 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-700"
+            className="btn btn-xs bg-base-200 hover:bg-base-100 text-slate-300 border-base-300 font-mono"
           >
             Reset focus
           </button>
@@ -83,7 +82,7 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
       {chapter.activeNodes.length > 0 && (
         <div className="mb-4">
           <div className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
-            <Box className="w-3.5 h-3.5 text-indigo-400" />
+            <Box className="w-3.5 h-3.5 text-slate-400" />
             <span>Active Graph Symbols:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -94,10 +93,10 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
                 <button
                   key={nodeId}
                   onClick={() => selectNode(isSelected ? null : nodeId)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all border flex items-center gap-1 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors border flex items-center gap-1 ${
                     isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-400 ring-2 ring-indigo-400/50'
-                      : 'bg-slate-800/80 hover:bg-slate-700 text-indigo-300 border-slate-700 hover:border-indigo-500/50'
+                      ? 'bg-primary text-primary-content border-primary shadow-sm font-semibold'
+                      : 'bg-base-100 hover:bg-base-300 text-slate-300 border-base-300 hover:border-slate-600'
                   }`}
                   title="Click to highlight on canvas"
                 >

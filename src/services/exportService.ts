@@ -110,34 +110,43 @@ export function generateStandaloneHtml(
     renderedChaptersByStory[key] = (st.chapters || []).map((chap, i) => {
       let snippets = '';
       (chap.codeSnippets || []).forEach((s, sIdx) => {
+        const fileName = s.filePath.split('/').pop() || s.filePath;
         snippets += `
-          <div id="snippet-${key}-${i}-${sIdx}" class="mt-4 rounded-xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-inner transition-all duration-300">
-            <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-              <div class="flex items-center gap-2 truncate">
-                <span>📄</span>
-                <span class="truncate">${escapeXml(s.filePath)}:${s.startLine}-${s.endLine}</span>
+          <div id="snippet-${key}-${i}-${sIdx}" class="mt-4 rounded-lg bg-[#07090e] border border-slate-800 overflow-hidden transition-all duration-200">
+            <div class="px-3.5 py-2 bg-slate-900/80 border-b border-slate-800 text-xs font-mono text-slate-300 flex items-center justify-between">
+              <div class="flex items-center gap-3 truncate min-w-0">
+                <div class="flex items-center gap-1.5 shrink-0 opacity-75">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#eab308]"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#22c55e]"></span>
+                </div>
+                <span class="font-semibold text-slate-200 truncate">${escapeXml(fileName)}</span>
+                <span class="text-slate-500 font-normal truncate hidden sm:inline">(${escapeXml(s.filePath)}) • L${s.startLine}-${s.endLine}</span>
               </div>
-              <div class="flex items-center gap-3 shrink-0">
-                <span class="text-indigo-400 font-sans font-medium hidden sm:inline">${escapeXml(s.annotation || '')}</span>
-                <button class="px-2 py-0.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="${escapeXml(s.code)}">Copy</button>
+              <div class="flex items-center gap-2 shrink-0">
+                ${s.annotation ? `<span class="badge badge-xs badge-ghost text-slate-400 font-sans hidden sm:inline">${escapeXml(s.annotation)}</span>` : ''}
+                <button class="btn btn-ghost btn-xs h-6 min-h-0 px-2 font-mono text-[11px] text-slate-400 hover:text-white border border-slate-700" onclick="navigator.clipboard.writeText(this.getAttribute('data-code')).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 1500); })" data-code="${escapeXml(s.code)}">Copy</button>
               </div>
             </div>
-            <pre class="p-4 text-xs font-mono text-indigo-100 overflow-x-auto leading-relaxed"><code>${escapeXml(s.code)}</code></pre>
+            <pre class="p-4 text-xs font-mono text-slate-200 bg-[#07090e] overflow-x-auto leading-relaxed"><code>${escapeXml(s.code)}</code></pre>
           </div>
         `;
       });
 
       return `
-        <div id="chapter-card-${i}" class="chapter-card border border-slate-800/80 bg-slate-900/60 backdrop-blur rounded-2xl p-6 transition-all duration-300 hover:border-slate-700" data-index="${i}">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-mono">Chapter ${chap.chapterNumber}</span>
-            <h3 class="text-lg font-bold text-white tracking-tight">${escapeXml(chap.title)}</h3>
+        <div id="chapter-card-${i}" class="chapter-card border border-slate-800 bg-slate-900/70 rounded-xl p-6 transition-all duration-200 hover:border-slate-700" data-index="${i}">
+          <div class="flex items-center gap-3 mb-2.5">
+            <span class="badge badge-sm badge-neutral font-mono font-semibold text-slate-300 border border-slate-700">Chapter ${chap.chapterNumber}</span>
+            <h3 class="text-base font-bold text-white tracking-tight">${escapeXml(chap.title)}</h3>
           </div>
-          <p class="text-sm font-medium text-slate-300 mb-3">${escapeXml(chap.summary)}</p>
-          <p class="text-sm text-slate-400 leading-relaxed mb-4">${escapeXml(chap.narrative)}</p>
+          <div class="mb-3.5 p-3 rounded-md bg-slate-950/60 border border-slate-800/80 text-xs font-mono text-slate-300">
+            <span class="text-slate-500 font-bold mr-1.5 uppercase text-[10px] tracking-wider">Summary:</span>
+            ${escapeXml(chap.summary)}
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed mb-4">${escapeXml(chap.narrative)}</p>
           <div class="flex flex-wrap gap-1.5 mb-2">
             ${(chap.activeNodes || []).map(nodeId => `
-              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800/80 text-indigo-300 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors" onclick="focusNode('${escapeXml(nodeId)}')">
+              <span class="badge badge-xs badge-outline badge-primary font-mono cursor-pointer hover:bg-primary/20 transition-colors py-2" onclick="focusNode('${escapeXml(nodeId)}')">
                 ${escapeXml(nodeId.split(':').pop() || nodeId)}
               </span>
             `).join('')}
@@ -152,7 +161,7 @@ export function generateStandaloneHtml(
   const jsonChaptersHtmlByStory = JSON.stringify(renderedChaptersByStory).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
 
   return `<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" data-theme="dim">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -172,7 +181,7 @@ export function generateStandaloneHtml(
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <meta name="theme-color" content="#020617">
+  <meta name="theme-color" content="#090b10">
   <meta name="color-scheme" content="dark">
 
   <!-- Open Graph / Facebook / LinkedIn / Discord -->
@@ -248,6 +257,7 @@ export function generateStandaloneHtml(
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -276,98 +286,96 @@ export function generateStandaloneHtml(
       left: -9999px !important;
     }
     .active-card {
-      border-color: #6366f1 !important;
-      box-shadow: 0 0 35px rgba(99, 102, 241, 0.35);
-      transform: translateY(-2px);
+      border-color: #3b82f6 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
     .dot-grid {
-      background-color: #030712;
-      background-image: radial-gradient(circle, #334155 1.5px, transparent 1.5px);
+      background-color: #090b10;
+      background-image: radial-gradient(circle, #272a34 1px, transparent 1px);
       background-size: 24px 24px;
     }
     .node-card {
-      transition: border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.25s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
     }
     .node-card.active-node {
       opacity: 1 !important;
-      border-color: #818cf8 !important;
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.45), 0 12px 24px -6px rgba(0, 0, 0, 0.6) !important;
-      transform: scale(1.03);
+      border-color: #3b82f6 !important;
+      box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.5) !important;
+      transform: scale(1.01);
       z-index: 30 !important;
     }
     .node-card.inactive-node {
-      opacity: 0.55;
+      opacity: 0.65;
     }
     .node-card.inactive-node:hover {
       opacity: 1;
-      transform: scale(1.02);
+      transform: scale(1.01);
       z-index: 25;
     }
     .edge-line {
       fill: none;
-      stroke: #475569;
-      stroke-width: 2;
-      transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
+      stroke: #272a34;
+      stroke-width: 1.5;
+      transition: stroke 0.2s ease, stroke-width 0.2s ease;
     }
     .edge-line.active-edge {
-      stroke: #818cf8;
-      stroke-width: 2.5;
-      filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.7));
-      stroke-dasharray: 6 4;
-      animation: edgeFlow 1.2s linear infinite;
+      stroke: #3b82f6;
+      stroke-width: 2;
+      stroke-dasharray: 4 3;
+      animation: edgeFlow 1.5s linear infinite;
     }
     @keyframes edgeFlow {
-      from { stroke-dashoffset: 20; }
+      from { stroke-dashoffset: 14; }
       to { stroke-dashoffset: 0; }
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+<body class="bg-base-100 text-slate-100 min-h-screen selection:bg-primary/30 selection:text-white">
   <!-- Header -->
-  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+  <header class="border-b border-base-300 bg-base-200/90 backdrop-blur sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/25 shrink-0">
+      <div class="w-8 h-8 rounded-lg overflow-hidden border border-base-300 bg-base-100 shrink-0">
         <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
           <defs>
             <linearGradient id="rt-hdr-p" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#38bdf8" />
-              <stop offset="55%" stop-color="#6366f1" />
-              <stop offset="100%" stop-color="#a855f7" />
+              <stop offset="55%" stop-color="#3b82f6" />
+              <stop offset="100%" stop-color="#1d4ed8" />
             </linearGradient>
             <linearGradient id="rt-hdr-b" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#34d399" />
+              <stop offset="0%" stop-color="#10b981" />
               <stop offset="100%" stop-color="#38bdf8" />
             </linearGradient>
           </defs>
-          <rect width="512" height="512" rx="112" fill="#0f172a" />
-          <rect width="504" height="504" x="4" y="4" rx="108" stroke="#334155" stroke-width="4" opacity="0.5" />
+          <rect width="512" height="512" rx="112" fill="#090b10" />
+          <rect width="504" height="504" x="4" y="4" rx="108" stroke="#272a34" stroke-width="4" opacity="0.6" />
           <g transform="translate(0, 10)">
             <path d="M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z" fill="url(#rt-hdr-p)" opacity="0.95" />
             <path d="M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z" fill="url(#rt-hdr-p)" opacity="0.75" />
             <path d="M 180 350 C 180 260 210 210 295 200" stroke="url(#rt-hdr-b)" stroke-width="26" stroke-linecap="round" />
             <line x1="180" y1="160" x2="180" y2="360" stroke="#ffffff" stroke-width="24" stroke-linecap="round" />
-            <circle cx="180" cy="355" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
-            <circle cx="180" cy="165" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
-            <circle cx="310" cy="200" r="26" fill="url(#rt-hdr-b)" stroke="#0f172a" stroke-width="8" />
+            <circle cx="180" cy="355" r="22" fill="#090b10" stroke="#ffffff" stroke-width="12" />
+            <circle cx="180" cy="165" r="22" fill="#090b10" stroke="#ffffff" stroke-width="12" />
+            <circle cx="310" cy="200" r="26" fill="url(#rt-hdr-b)" stroke="#090b10" stroke-width="8" />
           </g>
         </svg>
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <span class="font-extrabold text-sm text-white tracking-tight">RepoTale</span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">v1.0</span>
+          <span class="font-bold text-sm text-white tracking-tight">RepoTale</span>
+          <span class="badge badge-xs badge-neutral font-mono text-[10px]">v1.0</span>
           <span class="text-slate-600 hidden sm:inline">/</span>
           <h2 class="font-medium text-xs text-slate-300 hidden sm:flex items-center gap-1.5 font-mono">
             ${story.meta.repoName}
-            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">${story.meta.primaryLanguage}</span>
+            <span class="badge badge-xs badge-outline badge-primary font-mono">${story.meta.primaryLanguage}</span>
           </h2>
         </div>
         <p class="text-xs text-slate-400 truncate max-w-md">Interactive codebase storytelling & AST architecture visualizer</p>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 transition-all shadow-sm flex items-center gap-2 group">
-        <svg class="w-4 h-4 fill-current text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" aria-hidden="true">
+    <div class="flex items-center gap-2">
+      <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-neutral btn-sm normal-case font-medium border border-base-300 text-slate-300 hover:text-white flex items-center gap-2">
+        <svg class="w-3.5 h-3.5 fill-current text-slate-400" viewBox="0 0 24 24" aria-hidden="true">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
         </svg>
         <span>GitHub</span>
@@ -377,59 +385,57 @@ export function generateStandaloneHtml(
   </header>
 
   <!-- Split Screen Viewer -->
-  <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
+  <main class="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)] bg-base-100">
     <!-- Left Narrative Pane -->
-    <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-slate-800/80 scroll-smooth">
+    <div id="narrative-pane" class="lg:col-span-6 p-6 lg:p-10 space-y-10 overflow-y-auto max-h-[calc(100vh-65px)] border-r border-base-300 scroll-smooth">
       <!-- RepoTale Hero Section & Introduction -->
-      <section class="p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
-        <div class="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
+      <section class="p-6 lg:p-7 rounded-xl bg-base-200 border border-base-300 shadow-sm relative overflow-hidden">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
           <div class="flex-1">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-[11px] font-medium mb-3">
-              <span>✨</span>
+            <div class="badge badge-sm badge-neutral gap-1.5 font-mono text-[11px] text-slate-300 mb-3 border border-base-300">
+              <span class="text-primary">✨</span>
               <span>Open-Source Codebase Storytelling</span>
             </div>
 
-            <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-              Turn complex codebases into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">interactive visual stories</span>.
+            <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight">
+              Turn complex codebases into <span class="text-primary font-extrabold">interactive visual stories</span>.
             </h1>
 
-            <p class="mt-3 text-sm text-slate-300 leading-relaxed">
-              RepoTale solves the cognitive overload of onboarding into unfamiliar repositories. It ingests your project, extracts the AST call graph, and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
+            <p class="mt-3 text-sm text-slate-400 leading-relaxed max-w-2xl">
+              RepoTale extracts the AST call graph of any repository and generates an interactive, chapter-driven walkthrough synchronized with a visual architectural diagram.
             </p>
           </div>
 
           <!-- Featured Logo Lockup -->
-          <div class="hidden md:flex shrink-0 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-2xl">
-            <svg width="115" height="144" viewBox="0 0 512 640" fill="none" xmlns="http://www.w3.org/2000/svg" class="rounded-xl">
+          <div class="hidden md:flex shrink-0 p-1.5 rounded-xl bg-base-100 border border-base-300 shadow-sm">
+            <svg width="105" height="130" viewBox="0 0 512 640" fill="none" xmlns="http://www.w3.org/2000/svg" class="rounded-lg">
               <defs>
                 <linearGradient id="rt-hero-p" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="#38bdf8" />
-                  <stop offset="55%" stop-color="#6366f1" />
-                  <stop offset="100%" stop-color="#a855f7" />
+                  <stop offset="55%" stop-color="#3b82f6" />
+                  <stop offset="100%" stop-color="#1d4ed8" />
                 </linearGradient>
                 <linearGradient id="rt-hero-b" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="0%" stop-color="#10b981" />
                   <stop offset="100%" stop-color="#38bdf8" />
                 </linearGradient>
               </defs>
-              <rect width="512" height="640" rx="48" fill="#0f172a" />
-              <rect width="504" height="632" x="4" y="4" rx="44" stroke="#334155" stroke-width="2" opacity="0.5" />
+              <rect width="512" height="640" rx="48" fill="#090b10" />
+              <rect width="504" height="632" x="4" y="4" rx="44" stroke="#272a34" stroke-width="2" opacity="0.6" />
               <g transform="translate(0, -20)">
                 <path d="M 180 370 L 180 165 C 180 140 215 130 256 148 L 256 385 C 215 368 180 370 180 370 Z" fill="url(#rt-hero-p)" opacity="0.95" />
                 <path d="M 332 370 L 332 165 C 332 140 297 130 256 148 L 256 385 C 297 368 332 370 332 370 Z" fill="url(#rt-hero-p)" opacity="0.75" />
-                <path d="M 180 350 C 180 260 210 210 295 200" stroke="url(#rt-hero-b)" stroke-width="26" stroke-linecap="round" />
+                <path d="M 180 350 C 180 260 210 210 295 200" stroke="url(#rt-hdr-b)" stroke-width="26" stroke-linecap="round" />
                 <line x1="180" y1="160" x2="180" y2="360" stroke="#ffffff" stroke-width="24" stroke-linecap="round" />
-                <circle cx="180" cy="355" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
-                <circle cx="180" cy="165" r="22" fill="#0f172a" stroke="#ffffff" stroke-width="12" />
-                <circle cx="310" cy="200" r="26" fill="url(#rt-hero-b)" stroke="#0f172a" stroke-width="8" />
+                <circle cx="180" cy="355" r="22" fill="#090b10" stroke="#ffffff" stroke-width="12" />
+                <circle cx="180" cy="165" r="22" fill="#090b10" stroke="#ffffff" stroke-width="12" />
+                <circle cx="310" cy="200" r="26" fill="url(#rt-hero-b)" stroke="#090b10" stroke-width="8" />
               </g>
               <text x="256" y="490" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="62" letter-spacing="-1.5">
                 <tspan fill="#f8fafc" font-weight="800">Repo</tspan>
-                <tspan fill="url(#rt-hero-p)" font-weight="700">Tale</tspan>
+                <tspan fill="#3b82f6" font-weight="700">Tale</tspan>
               </text>
-              <text x="256" y="535" text-anchor="middle" font-family="system-ui, -apple-system, monospace" font-size="16" font-weight="600" letter-spacing="5" fill="#94a3b8">CODEBASE STORIES</text>
+              <text x="256" y="535" text-anchor="middle" font-family="system-ui, -apple-system, monospace" font-size="16" font-weight="600" letter-spacing="5" fill="#64748b">CODEBASE STORIES</text>
             </svg>
           </div>
         </div>
@@ -437,73 +443,70 @@ export function generateStandaloneHtml(
         <!-- 3-Step Lifecycle: How It Works on Any Repo -->
         <div class="mt-6 mb-6">
           <div class="flex items-center gap-2 mb-3">
-            <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">
-              How It Works for Your Repo
+            <span class="badge badge-xs badge-outline badge-primary font-mono font-semibold uppercase tracking-wider">
+              How It Works
             </span>
             <span class="text-xs text-slate-400">From code to hosted interactive tour in 3 steps:</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
-              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
-                <span>📄</span>
+            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
+              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
                 <span>01. INGEST</span>
               </div>
-              <h3 class="text-xs font-bold text-slate-200 mb-1">Point to Any Codebase</h3>
+              <h3 class="text-xs font-semibold text-slate-200 mb-1">Point to Any Codebase</h3>
               <p class="text-[11px] text-slate-400 leading-relaxed">
                 Provide a GitHub URL or local repository folder. Tree-sitter extracts functions, call-sites, and imports across TS, Python, Rust, and Go.
               </p>
             </div>
 
-            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
-              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
-                <span>🗺️</span>
+            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
+              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
                 <span>02. VISUALIZE</span>
               </div>
-              <h3 class="text-xs font-bold text-slate-200 mb-1">Auto-Generate Story</h3>
+              <h3 class="text-xs font-semibold text-slate-200 mb-1">Auto-Generate Story</h3>
               <p class="text-[11px] text-slate-400 leading-relaxed">
                 Generates an interactive chapter-by-chapter guided walkthrough synchronized with an animated React Flow call graph.
               </p>
             </div>
 
-            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm relative overflow-hidden">
-              <div class="text-[10px] font-mono font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
-                <span>🌐</span>
+            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
+              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
                 <span>03. PUBLISH</span>
               </div>
-              <h3 class="text-xs font-bold text-slate-200 mb-1">Host Free Anywhere</h3>
+              <h3 class="text-xs font-semibold text-slate-200 mb-1">Host Free Anywhere</h3>
               <p class="text-[11px] text-slate-400 leading-relaxed">
-                Emits a zero-dependency <code class="text-indigo-300">/docs/index.html</code>. Host 100% free on GitHub Pages, Netlify, Cloudflare, or your custom domain.
+                Emits a zero-dependency <code class="px-1 py-0.5 rounded bg-base-200 text-slate-300 font-mono text-[10px]">/docs/index.html</code>. Host 100% free on GitHub Pages, Netlify, Cloudflare, or your custom domain.
               </p>
             </div>
           </div>
         </div>
 
         <!-- Dual-Layer Connection Showcase -->
-        <div class="p-4 rounded-xl bg-slate-950/80 border border-indigo-500/25 mb-6">
+        <div class="p-4 rounded-lg bg-base-100 border border-base-300 mb-6">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
               <span>🔗</span>
               <span>The Dual-Layer Connection: README to Hosted Web Tour</span>
             </span>
-            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
+            <span class="badge badge-xs badge-success font-mono font-medium">
               1-Click Navigation
             </span>
           </div>
-          <p class="text-xs text-slate-300 mb-3 leading-relaxed">
-            RepoTale adds an interactive badge to your repository's <code class="text-indigo-300 font-mono">README.md</code>. When anyone clicks it, it launches your hosted visual walkthrough on <strong>GitHub Pages</strong>, <strong>Netlify</strong>, or your own <strong>custom domain</strong> (just like this site!):
+          <p class="text-xs text-slate-400 mb-3 leading-relaxed">
+            RepoTale adds an interactive badge to your repository's <code class="text-slate-300 font-mono">README.md</code>. When anyone clicks it, it launches your hosted visual walkthrough on <strong>GitHub Pages</strong>, <strong>Netlify</strong>, or your own <strong>custom domain</strong>:
           </p>
-          <div class="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-mono">
+          <div class="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-md bg-base-200/80 border border-base-300 text-xs font-mono">
             <div class="flex items-center gap-2 shrink-0">
               <span class="text-slate-400 font-sans text-[11px]">README.md badge:</span>
-              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 text-white font-bold text-[11px] shadow-sm">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-primary text-primary-content font-bold text-[11px]">
                 🧭 RepoTale | Interactive Tour
               </span>
             </div>
-            <span class="text-indigo-400 hidden sm:inline shrink-0">➔</span>
-            <div class="flex items-center gap-1.5 text-indigo-300 truncate">
+            <span class="text-slate-500 hidden sm:inline shrink-0">➔</span>
+            <div class="flex items-center gap-1.5 text-slate-300 truncate">
               <span class="text-slate-400 font-sans text-[11px]">Opens web tour:</span>
-              <span class="underline decoration-indigo-500/60 underline-offset-2 truncate">
+              <span class="underline decoration-slate-600 underline-offset-2 truncate">
                 https://yourname.github.io/your-repo/
               </span>
             </div>
@@ -511,23 +514,20 @@ export function generateStandaloneHtml(
         </div>
 
         <!-- Action Buttons & Live Demo Switcher -->
-        <div class="pt-5 border-t border-slate-800/80 flex flex-col gap-4">
+        <div class="pt-4 border-t border-base-300 flex flex-col gap-3">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-xs text-indigo-300">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span class="font-medium text-emerald-300">Live Demo Below:</span>
-              <span id="live-demo-label" class="text-slate-300">${isRepoTale ? 'RepoTale analyzing its own architecture' : escapeXml(story.meta.repoName)}</span>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="font-semibold text-slate-200">Live Demo:</span>
+              <span id="live-demo-label" class="text-slate-400">${isRepoTale ? 'RepoTale analyzing its own architecture' : escapeXml(story.meta.repoName)}</span>
             </div>
 
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2">
               <a
                 href="https://github.com/buzzcobain/RepoTale#quickstart"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/25 flex items-center gap-1.5"
+                class="btn btn-primary btn-sm normal-case font-medium gap-1.5"
               >
                 <span>🚀</span>
                 <span>Use on Your Repo (Free)</span>
@@ -537,7 +537,7 @@ export function generateStandaloneHtml(
                 href="${githubUrl}"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700 transition-all flex items-center gap-1.5"
+                class="btn btn-neutral btn-sm normal-case font-medium border border-base-300 gap-1.5 text-slate-300 hover:text-white"
               >
                 <span>View Source</span>
                 <span>↗</span>
@@ -546,16 +546,16 @@ export function generateStandaloneHtml(
           </div>
 
           <!-- Multi-Repo Live Switcher -->
-          <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
+          <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-base-100 border border-base-300">
             <div class="flex items-center gap-2 text-xs">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Switch Live Demo:</span>
+              <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Switch Demo:</span>
               <span class="text-slate-400 hidden sm:inline text-xs">Explore how RepoTale visualizes different architectures:</span>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5">
+            <div class="flex flex-wrap items-center gap-1">
               <button
                 id="btn-sample-repotale"
                 onclick="switchStory('repotale')"
-                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm"
+                class="sample-btn btn btn-xs font-mono font-medium btn-primary"
               >
                 <span>🧭</span>
                 <span>RepoTale (Tauri/React)</span>
@@ -563,7 +563,7 @@ export function generateStandaloneHtml(
               <button
                 id="btn-sample-fastapi"
                 onclick="switchStory('fastapi')"
-                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                class="sample-btn btn btn-xs font-mono font-medium btn-ghost text-slate-400 hover:text-white"
               >
                 <span>⚡</span>
                 <span>FastAPI (Python)</span>
@@ -571,7 +571,7 @@ export function generateStandaloneHtml(
               <button
                 id="btn-sample-trpc"
                 onclick="switchStory('trpc')"
-                class="sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                class="sample-btn btn btn-xs font-mono font-medium btn-ghost text-slate-400 hover:text-white"
               >
                 <span>🔗</span>
                 <span>tRPC (TypeScript)</span>
@@ -582,21 +582,21 @@ export function generateStandaloneHtml(
       </section>
 
       <!-- Architecture Overview Card -->
-      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-lg">
+      <div class="p-6 rounded-xl bg-base-200 border border-base-300 shadow-sm">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+          <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
             <span>🧭</span>
             <span id="overview-repo-name">${story.meta.repoName} Architecture Tour</span>
           </h2>
-          <span id="overview-chapter-count" class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-800/40">
+          <span id="overview-chapter-count" class="badge badge-sm badge-neutral font-mono text-slate-300 border border-base-300">
             ${(story.chapters || []).length} Chapters
           </span>
         </div>
-        <p id="overview-description" class="text-sm text-slate-300 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
+        <p id="overview-description" class="text-xs text-slate-400 leading-relaxed">${story.meta.description || 'Explore the system architecture, call graph, and data flow below.'}</p>
         <div class="mt-4 flex flex-wrap gap-2 text-xs">
-          <span id="overview-entry-point" class="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-mono">Entry: ${story.meta.entryPoint}</span>
-          <div id="overview-frameworks" class="flex flex-wrap gap-2">
-            ${(story.meta.frameworks || []).map(f => `<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">${f}</span>`).join('')}
+          <span id="overview-entry-point" class="badge badge-sm badge-neutral font-mono text-slate-300 border border-base-300">Entry: ${story.meta.entryPoint}</span>
+          <div id="overview-frameworks" class="flex flex-wrap gap-1.5">
+            ${(story.meta.frameworks || []).map(f => `<span class="badge badge-sm badge-outline badge-neutral font-mono text-slate-300">${f}</span>`).join('')}
           </div>
         </div>
       </div>
@@ -619,28 +619,28 @@ export function generateStandaloneHtml(
     </div>
 
     <!-- Right Dynamic Graph Canvas -->
-    <div class="lg:col-span-6 sticky top-[65px] h-[calc(100vh-65px)] flex flex-col justify-between overflow-hidden bg-slate-950 relative select-none">
+    <div class="lg:col-span-6 sticky top-[65px] h-[calc(100vh-65px)] flex flex-col justify-between overflow-hidden bg-[#080a0f] relative select-none">
       <!-- Top Graph Bar -->
-      <div class="px-5 py-3 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md flex items-center justify-between z-20 shrink-0">
+      <div class="px-5 py-2.5 border-b border-base-300 bg-base-200/90 backdrop-blur-md flex items-center justify-between z-20 shrink-0">
         <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <h2 class="text-xs font-bold tracking-wider uppercase text-slate-200">Interactive Architecture Graph</h2>
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <h2 class="text-xs font-mono font-bold tracking-wider uppercase text-slate-200">Interactive Architecture Graph</h2>
         </div>
-        <span id="current-chapter-indicator" class="text-xs font-mono text-indigo-400 bg-indigo-950/60 px-2.5 py-1 rounded-md border border-indigo-800/50">
+        <span id="current-chapter-indicator" class="badge badge-sm badge-neutral font-mono text-slate-300 border border-base-300">
           Chapter 1 Focus
         </span>
       </div>
 
       <!-- Floating Controls -->
-      <div class="absolute top-16 right-5 z-30 flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md shadow-2xl text-xs">
-        <button id="btn-zoom-in" title="Zoom In" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center justify-center font-bold text-base transition-colors">+</button>
-        <button id="btn-zoom-out" title="Zoom Out" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center justify-center font-bold text-base transition-colors">−</button>
-        <button id="btn-fit" title="Fit to Screen" class="px-2.5 h-7 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-1 font-mono text-[11px] transition-colors">
+      <div class="absolute top-14 right-5 z-30 flex items-center gap-1 p-1 rounded-lg bg-base-200/90 border border-base-300 backdrop-blur-md shadow-sm text-xs">
+        <button id="btn-zoom-in" title="Zoom In" class="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white font-mono text-sm">+</button>
+        <button id="btn-zoom-out" title="Zoom Out" class="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white font-mono text-sm">−</button>
+        <button id="btn-fit" title="Fit to Screen" class="btn btn-ghost btn-xs h-7 px-2 text-slate-400 hover:text-white font-mono text-[11px]">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
           <span>Fit</span>
         </button>
-        <div class="h-4 w-[1px] bg-slate-800 mx-0.5"></div>
-        <button id="btn-dir" title="Toggle Layout Direction (TB: Top-Bottom / LR: Left-Right)" class="px-2.5 h-7 rounded-lg hover:bg-slate-800 text-indigo-300 font-mono text-[11px] flex items-center gap-1 transition-colors">
+        <div class="h-3.5 w-[1px] bg-base-300 mx-0.5"></div>
+        <button id="btn-dir" title="Toggle Layout Direction (TB: Top-Bottom / LR: Left-Right)" class="btn btn-ghost btn-xs h-7 px-2 text-primary font-mono text-[11px]">
           <span id="dir-label">TB</span>
         </button>
       </div>
@@ -652,10 +652,10 @@ export function generateStandaloneHtml(
           <svg id="graph-edges-svg" class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="min-width: 3000px; min-height: 3000px;">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#475569" />
               </marker>
               <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#818cf8" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b82f6" />
               </marker>
             </defs>
             <g id="edges-group"></g>
@@ -666,28 +666,28 @@ export function generateStandaloneHtml(
         </div>
 
         <!-- Legend Pill (Bottom Left) -->
-        <div class="absolute bottom-4 left-4 z-30 hidden sm:flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-[10px] text-slate-300 font-medium shadow-lg">
+        <div class="absolute bottom-4 left-4 z-30 hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-base-200/90 border border-base-300 backdrop-blur-md text-[10px] text-slate-400 font-mono shadow-sm">
           <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span><span>Entry</span></div>
           <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Middleware</span></div>
-          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span>Service</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-400"></span><span>Service</span></div>
           <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Data</span></div>
           <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400"></span><span>Utility</span></div>
         </div>
 
         <!-- Minimap (Bottom Right) -->
-        <div id="minimap-container" class="absolute bottom-4 right-4 z-30 w-36 h-24 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-md overflow-hidden shadow-2xl hidden md:block">
+        <div id="minimap-container" class="absolute bottom-4 right-4 z-30 w-36 h-24 rounded-lg bg-base-200/90 border border-base-300 backdrop-blur-md overflow-hidden shadow-sm hidden md:block">
           <svg id="minimap-svg" class="w-full h-full"></svg>
-          <div id="minimap-viewport" class="absolute border border-indigo-400 bg-indigo-500/15 pointer-events-none rounded transition-all duration-75"></div>
+          <div id="minimap-viewport" class="absolute border border-primary bg-primary/15 pointer-events-none rounded transition-all duration-75"></div>
         </div>
       </div>
 
       <!-- Active Focus Footer Bar -->
-      <div class="p-3.5 bg-slate-900/90 border-t border-slate-800 shadow-lg flex items-center justify-between text-xs z-20 shrink-0">
-        <div class="flex items-center gap-2 text-slate-300 truncate mr-2">
-          <span class="font-semibold text-white">Active Focus:</span>
-          <span id="active-nodes-list" class="font-mono text-indigo-300 truncate">Loading...</span>
+      <div class="px-4 py-2 bg-base-200/90 border-t border-base-300 shadow-sm flex items-center justify-between text-xs z-20 shrink-0 font-mono">
+        <div class="flex items-center gap-2 text-slate-400 truncate mr-2 text-[11px]">
+          <span class="font-semibold text-slate-200">Active Focus:</span>
+          <span id="active-nodes-list" class="text-primary truncate">Loading...</span>
         </div>
-        <span class="text-slate-500 text-[11px] shrink-0">Click any node to jump to story</span>
+        <span class="text-slate-500 text-[10px] shrink-0">Click node to jump to story</span>
       </div>
     </div>
   </main>
@@ -700,44 +700,34 @@ export function generateStandaloneHtml(
 
     const typeConfig = {
       entry: {
-        bg: 'bg-sky-950/70',
-        border: 'border-sky-500/40',
-        badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+        badgeClass: 'badge-info',
         badgeText: 'Entrypoint',
         color: '#38bdf8',
-        iconSvg: '<svg class="w-3.5 h-3.5 text-sky-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        iconSvg: '<svg class="w-3 h-3 text-sky-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
       },
       middleware: {
-        bg: 'bg-amber-950/70',
-        border: 'border-amber-500/40',
-        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        badgeClass: 'badge-warning',
         badgeText: 'Middleware',
         color: '#fbbf24',
-        iconSvg: '<svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+        iconSvg: '<svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
       },
       service: {
-        bg: 'bg-indigo-950/70',
-        border: 'border-indigo-500/40',
-        badgeBg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        badgeClass: 'badge-primary',
         badgeText: 'Service',
-        color: '#818cf8',
-        iconSvg: '<svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>'
+        color: '#3b82f6',
+        iconSvg: '<svg class="w-3 h-3 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>'
       },
       data: {
-        bg: 'bg-emerald-950/70',
-        border: 'border-emerald-500/40',
-        badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        badgeClass: 'badge-success',
         badgeText: 'Data/Store',
         color: '#34d399',
-        iconSvg: '<svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'
+        iconSvg: '<svg class="w-3 h-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'
       },
       utility: {
-        bg: 'bg-slate-900/80',
-        border: 'border-slate-700/60',
-        badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+        badgeClass: 'badge-neutral',
         badgeText: 'Utility',
         color: '#94a3b8',
-        iconSvg: '<svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+        iconSvg: '<svg class="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
       }
     };
 
@@ -883,7 +873,7 @@ export function generateStandaloneHtml(
         const isActive = activeNodeIds.has(node.id);
         const isSelected = selectedNodeId === node.id;
         const cardStateClass = isSelected
-          ? 'ring-2 ring-indigo-400 border-indigo-400 scale-[1.03] active-node'
+          ? 'border-primary ring-1 ring-primary/60 active-node'
           : isActive
           ? 'active-node'
           : 'inactive-node';
@@ -892,41 +882,42 @@ export function generateStandaloneHtml(
           <div
             id="node-\${CSS.escape(node.id)}"
             data-node-id="\${escapeHtml(node.id)}"
-            class="node-card absolute w-[240px] rounded-xl p-3.5 backdrop-blur-md cursor-pointer select-none shadow-xl border \${style.bg} \${style.border} \${cardStateClass}"
+            class="node-card absolute w-[230px] rounded-lg p-3 cursor-pointer select-none border border-slate-800 bg-[#0e121a] \${cardStateClass}"
             style="left: \${node.x}px; top: \${node.y}px;"
           >
             <!-- Port Handles -->
-            <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-400 border-2 border-slate-950"></div>
-            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-400 border-2 border-slate-950"></div>
+            <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-400 border border-slate-900"></div>
+            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-400 border border-slate-900"></div>
 
             <!-- Top Row: Icon & Badge -->
             <div class="flex items-center justify-between mb-1.5">
               <div class="flex items-center gap-1.5">
                 \${style.iconSvg}
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border \${style.badgeBg}">
+                <span class="badge badge-xs badge-outline \${style.badgeClass} font-mono text-[10px]">
                   \${style.badgeText}
                 </span>
               </div>
-              <span class="beacon flex h-2 w-2 relative \${isActive ? '' : 'hidden'}">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-              </span>
+              <span class="beacon w-2 h-2 rounded-full bg-primary \${isActive ? '' : 'hidden'}" title="Active node in story"></span>
             </div>
 
             <!-- Title -->
-            <div class="font-bold text-xs text-white tracking-tight mb-1 truncate font-mono">
+            <div class="font-mono font-semibold text-xs text-white truncate mb-1">
               \${escapeHtml(node.label)}
             </div>
 
             <!-- File Path & Line Range -->
-            <div class="text-[10px] font-mono text-slate-400 mb-1.5 truncate flex items-center gap-1">
-              <span>📄</span>
-              <span class="truncate">\${escapeHtml(node.filePath)}:\${node.lineRange ? node.lineRange[0] + '-' + node.lineRange[1] : ''}</span>
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span class="truncate max-w-[125px]">
+                \${escapeHtml(node.filePath.split('/').pop() || node.filePath)}
+              </span>
+              <span class="text-slate-500">
+                \${node.lineRange ? 'L' + node.lineRange[0] + '-' + node.lineRange[1] : ''}
+              </span>
             </div>
 
             <!-- Description -->
             \${node.description ? \`
-              <p class="text-[10px] text-slate-300/80 line-clamp-2 leading-relaxed">
+              <p class="text-[10px] text-slate-400 line-clamp-2 leading-relaxed mt-1 border-t border-slate-800/80 pt-1">
                 \${escapeHtml(node.description)}
               </p>
             \` : ''}
@@ -1227,11 +1218,11 @@ export function generateStandaloneHtml(
 
       // Update sample switcher button styles
       document.querySelectorAll('.sample-btn').forEach(btn => {
-        btn.className = 'sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white';
+        btn.className = 'sample-btn btn btn-xs font-mono font-medium btn-ghost text-slate-400 hover:text-white';
       });
       const activeBtn = document.getElementById('btn-sample-' + key);
       if (activeBtn) {
-        activeBtn.className = 'sample-btn px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm';
+        activeBtn.className = 'sample-btn btn btn-xs font-mono font-medium btn-primary';
       }
 
       // Update Architecture Overview Card
@@ -1245,7 +1236,7 @@ export function generateStandaloneHtml(
       if (entryEl) entryEl.innerText = 'Entry: ' + (STORY.meta.entryPoint || 'unknown');
       const fwEl = document.getElementById('overview-frameworks');
       if (fwEl) {
-        fwEl.innerHTML = (STORY.meta.frameworks || []).map(f => '<span class="px-2.5 py-1 rounded-md bg-indigo-900/50 text-indigo-300 font-medium">' + escapeHtml(f) + '</span>').join('');
+        fwEl.innerHTML = (STORY.meta.frameworks || []).map(f => '<span class="badge badge-sm badge-outline badge-neutral font-mono text-slate-300">' + escapeHtml(f) + '</span>').join('');
       }
       const demoLabel = document.getElementById('live-demo-label');
       if (demoLabel) {

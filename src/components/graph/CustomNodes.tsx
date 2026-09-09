@@ -15,52 +15,34 @@ interface CustomNodeData {
 }
 
 const typeStyles: Record<NodeType, {
-  bg: string;
-  border: string;
-  activeBorder: string;
-  badgeBg: string;
+  badgeClass: string;
   badgeText: string;
   icon: React.ReactNode;
 }> = {
   entry: {
-    bg: 'bg-sky-950/70',
-    border: 'border-sky-500/40',
-    activeBorder: 'border-sky-400 ring-2 ring-sky-400 shadow-sky-500/40',
-    badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+    badgeClass: 'badge-info',
     badgeText: 'Entrypoint',
-    icon: <Play className="w-3.5 h-3.5 text-sky-400 fill-sky-400/30" />,
+    icon: <Play className="w-3 h-3 text-info" />,
   },
   middleware: {
-    bg: 'bg-amber-950/70',
-    border: 'border-amber-500/40',
-    activeBorder: 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/40',
-    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    badgeClass: 'badge-warning',
     badgeText: 'Middleware',
-    icon: <Shield className="w-3.5 h-3.5 text-amber-400" />,
+    icon: <Shield className="w-3 h-3 text-warning" />,
   },
   service: {
-    bg: 'bg-indigo-950/70',
-    border: 'border-indigo-500/40',
-    activeBorder: 'border-indigo-400 ring-2 ring-indigo-400 shadow-indigo-500/40',
-    badgeBg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    badgeClass: 'badge-primary',
     badgeText: 'Service',
-    icon: <Cpu className="w-3.5 h-3.5 text-indigo-400" />,
+    icon: <Cpu className="w-3 h-3 text-primary" />,
   },
   data: {
-    bg: 'bg-emerald-950/70',
-    border: 'border-emerald-500/40',
-    activeBorder: 'border-emerald-400 ring-2 ring-emerald-400 shadow-emerald-500/40',
-    badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    badgeClass: 'badge-success',
     badgeText: 'Data/Store',
-    icon: <Database className="w-3.5 h-3.5 text-emerald-400" />,
+    icon: <Database className="w-3 h-3 text-success" />,
   },
   utility: {
-    bg: 'bg-slate-900/80',
-    border: 'border-slate-700/60',
-    activeBorder: 'border-slate-400 ring-2 ring-slate-400 shadow-slate-500/30',
-    badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+    badgeClass: 'badge-neutral',
     badgeText: 'Utility',
-    icon: <Wrench className="w-3.5 h-3.5 text-slate-400" />,
+    icon: <Wrench className="w-3 h-3 text-slate-400" />,
   },
 };
 
@@ -72,44 +54,41 @@ export const CodeSymbolNode: React.FC<NodeProps> = memo(({ data }) => {
 
   return (
     <div
-      className={`relative w-[240px] rounded-xl p-3.5 backdrop-blur-md transition-all duration-300 cursor-pointer shadow-lg ${style.bg} border ${
+      className={`relative w-[230px] rounded-lg p-3 transition-all duration-200 cursor-pointer bg-[#0e121a] border ${
         isSelected
-          ? 'border-indigo-400 ring-2 ring-indigo-400 shadow-indigo-500/50 scale-[1.03]'
+          ? 'border-accent ring-1 ring-accent/50 shadow-md'
           : isActive
-          ? `${style.activeBorder} shadow-xl scale-[1.02]`
-          : `${style.border} opacity-60 hover:opacity-100 hover:scale-[1.01]`
+          ? 'border-primary ring-1 ring-primary/40 shadow-sm'
+          : 'border-base-300 opacity-65 hover:opacity-100 hover:border-slate-600'
       }`}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-indigo-400 !w-2.5 !h-2.5 !border-slate-950"
+        className="!bg-slate-400 !w-2 !h-2 !border-[#0e121a]"
       />
 
       {/* Top row: Icon & Type Badge */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           {style.icon}
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${style.badgeBg}`}>
+          <span className={`badge badge-xs badge-outline ${style.badgeClass} font-mono text-[10px]`}>
             {style.badgeText}
           </span>
         </div>
         {isActive && (
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-          </span>
+          <span className="w-2 h-2 rounded-full bg-primary" title="Active node in story" />
         )}
       </div>
 
       {/* Label / Symbol Name */}
-      <h4 className="font-mono font-bold text-sm text-slate-100 truncate mb-1">
+      <h4 className="font-mono font-semibold text-xs text-white truncate mb-1">
         {nodeData.label}
       </h4>
 
       {/* File Path & Line Range */}
-      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-        <span className="truncate max-w-[130px]" title={nodeData.filePath}>
+      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+        <span className="truncate max-w-[125px]" title={nodeData.filePath}>
           {nodeData.filePath.split('/').pop()}
         </span>
         <span className="text-slate-500">
@@ -120,7 +99,7 @@ export const CodeSymbolNode: React.FC<NodeProps> = memo(({ data }) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-indigo-400 !w-2.5 !h-2.5 !border-slate-950"
+        className="!bg-slate-400 !w-2 !h-2 !border-[#0e121a]"
       />
     </div>
   );

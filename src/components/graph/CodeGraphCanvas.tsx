@@ -72,8 +72,8 @@ const FlowInner: React.FC = () => {
           ...edge,
           animated: isConnectedToActive,
           style: {
-            stroke: isConnectedToActive ? '#818cf8' : '#334155',
-            strokeWidth: isConnectedToActive ? 2.5 : 1.5,
+            stroke: isConnectedToActive ? '#3b82f6' : '#272a34',
+            strokeWidth: isConnectedToActive ? 2 : 1.25,
           },
         };
       })
@@ -131,17 +131,17 @@ const FlowInner: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full bg-slate-950/60 overflow-hidden">
+    <div className="relative w-full h-full bg-[#080a0f] overflow-hidden">
       {/* Top Left Header Bar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-3 px-3 py-1.5 rounded-lg bg-base-200/90 backdrop-blur-md border border-base-300 shadow-sm">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-bold tracking-wide uppercase text-slate-200">
+          <Activity className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-mono font-bold tracking-wide uppercase text-slate-200">
             AST Call Graph
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 border-l border-slate-800 pl-3">
-          <Layers className="w-3.5 h-3.5 text-slate-500" />
+        <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400 border-l border-base-300 pl-3">
+          <Layers className="w-3 h-3 text-slate-500" />
           <span>{story.callGraph.nodes.length} symbols</span>
           <span>•</span>
           <span>{story.callGraph.edges.length} calls</span>
@@ -170,28 +170,28 @@ const FlowInner: React.FC = () => {
         <Background
           variant={BackgroundVariant.Dots}
           gap={24}
-          size={1.5}
-          color="#334155"
-          className="opacity-40"
+          size={1}
+          color="#272a34"
+          className="opacity-70"
         />
         <MiniMap
           nodeColor={(n) => {
             const type = (n.data as any)?.type;
             if (type === 'entry') return '#38bdf8';
             if (type === 'middleware') return '#fbbf24';
-            if (type === 'service') return '#818cf8';
+            if (type === 'service') return '#3b82f6';
             if (type === 'data') return '#34d399';
             return '#64748b';
           }}
-          maskColor="rgba(15, 23, 42, 0.75)"
-          className="!bg-slate-900/90 !border !border-slate-800 !rounded-xl !bottom-4 !right-4 shadow-xl"
+          maskColor="rgba(9, 11, 16, 0.75)"
+          className="!bg-base-200/90 !border !border-base-300 !rounded-lg !bottom-4 !right-4 shadow-sm"
         />
       </ReactFlow>
 
       {/* Bottom Status Pill */}
-      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 text-[11px] text-slate-300">
-        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span>💡 Click any diagram node to jump to its story chapter & code snippet</span>
+      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-2.5 py-1 rounded-md bg-base-200/90 backdrop-blur border border-base-300 text-[11px] text-slate-400 font-mono">
+        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+        <span>Click node to jump to story chapter & code</span>
       </div>
     </div>
   );

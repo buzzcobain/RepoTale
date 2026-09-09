@@ -16,42 +16,42 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl">
+    <div className="absolute top-4 right-4 z-10 flex items-center gap-1 p-1 rounded-lg bg-base-200/90 backdrop-blur-md border border-base-300 shadow-sm">
       <button
         onClick={() => zoomIn()}
         title="Zoom In"
-        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
       >
-        <ZoomIn className="w-4 h-4" />
+        <ZoomIn className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={() => zoomOut()}
         title="Zoom Out"
-        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
       >
-        <ZoomOut className="w-4 h-4" />
+        <ZoomOut className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={() => fitView({ duration: 500, padding: 0.2 })}
         title="Fit All Nodes"
-        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
       >
-        <Maximize2 className="w-4 h-4" />
+        <Maximize2 className="w-3.5 h-3.5" />
       </button>
-      <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
+      <div className="w-[1px] h-3.5 bg-base-300 mx-0.5" />
       <button
         onClick={onToggleDirection}
         title={`Switch layout direction (current: ${direction === 'TB' ? 'Top-Bottom' : 'Left-Right'})`}
-        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
       >
-        {direction === 'TB' ? <ArrowDownUp className="w-4 h-4" /> : <ArrowLeftRight className="w-4 h-4" />}
+        {direction === 'TB' ? <ArrowDownUp className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
       </button>
       <button
         onClick={onResetFocus}
         title="Re-focus Active Chapter Subgraph"
-        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors"
+        className="btn btn-ghost btn-xs h-7 w-7 p-0 text-slate-400 hover:text-primary"
       >
-        <RotateCcw className="w-4 h-4" />
+        <RotateCcw className="w-3.5 h-3.5" />
       </button>
     </div>
   );
