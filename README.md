@@ -157,6 +157,15 @@ Contributions are warmly welcomed! RepoTale is an open-source community effort.
 
 Huge thanks to all the amazing people who have contributed to RepoTale!
 
+<p align="left">
+  <a href="https://github.com/buzzcobain" title="buzzcobain">
+    <img src="https://github.com/buzzcobain.png" width="48" height="48" style="border-radius: 50%;" alt="buzzcobain" />
+  </a>
+  <a href="https://github.com/bernalalexis-try" title="bernalalexis-try">
+    <img src="https://github.com/bernalalexis-try.png" width="48" height="48" style="border-radius: 50%;" alt="bernalalexis-try" />
+  </a>
+</p>
+
 <a href="https://github.com/buzzcobain/RepoTale/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=buzzcobain/RepoTale" alt="RepoTale Contributors" />
 </a>

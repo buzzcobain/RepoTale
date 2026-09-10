@@ -1325,32 +1325,51 @@ export function generateStandaloneHtml(
       }
     }, 100);
 
-    // Fetch live contributors for avatars
+    // Fetch live contributors for avatars (from both merged PRs and contributors API)
+    function appendContributor(user) {
+      if (!user || !user.login) return;
+      var group = document.getElementById('contributors-avatars');
+      if (!group) return;
+      var login = user.login.toLowerCase();
+      var links = group.querySelectorAll('a');
+      for (var i = 0; i < links.length; i++) {
+        var href = links[i].getAttribute('href') || '';
+        if (href.split('/').pop().toLowerCase() === login) return;
+      }
+      var a = document.createElement('a');
+      a.href = user.html_url || ('https://github.com/' + user.login);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'avatar tooltip tooltip-top border-none';
+      a.setAttribute('data-tip', '@' + user.login);
+      var avatarUrl = user.avatar_url || ('https://github.com/' + user.login + '.png');
+      a.innerHTML = '<div class="w-7 h-7 rounded-full border border-base-300 bg-base-200 hover:scale-110 transition-transform"><img src="' + avatarUrl + '" alt="' + user.login + '" loading="lazy" /></div>';
+      group.appendChild(a);
+    }
+
+    // 1. Fetch merged PRs (Instant real-time detection)
+    try {
+      fetch('https://api.github.com/repos/buzzcobain/RepoTale/pulls?state=closed&per_page=50')
+        .then(function(res) { return res.ok ? res.json() : []; })
+        .then(function(prs) {
+          if (!Array.isArray(prs)) return;
+          prs.forEach(function(pr) {
+            if (pr.merged_at && pr.user) {
+              appendContributor(pr.user);
+            }
+          });
+        })
+        .catch(function() {});
+    } catch (e) {}
+
+    // 2. Fetch contributors API
     try {
       fetch('https://api.github.com/repos/buzzcobain/RepoTale/contributors')
         .then(function(res) { return res.ok ? res.json() : []; })
         .then(function(data) {
-          if (!Array.isArray(data) || data.length === 0) return;
-          var group = document.getElementById('contributors-avatars');
-          if (!group) return;
-          var existing = {};
-          var links = group.querySelectorAll('a');
-          for (var i = 0; i < links.length; i++) {
-            var href = links[i].getAttribute('href') || '';
-            var login = href.split('/').pop();
-            if (login) existing[login] = true;
-          }
+          if (!Array.isArray(data)) return;
           data.forEach(function(c) {
-            if (!existing[c.login] && c.avatar_url) {
-              var a = document.createElement('a');
-              a.href = c.html_url || ('https://github.com/' + c.login);
-              a.target = '_blank';
-              a.rel = 'noopener noreferrer';
-              a.className = 'avatar tooltip tooltip-top border-none';
-              a.setAttribute('data-tip', '@' + c.login);
-              a.innerHTML = '<div class="w-7 h-7 rounded-full border border-base-300 bg-base-200 hover:scale-110 transition-transform"><img src="' + c.avatar_url + '" alt="' + c.login + '" loading="lazy" /></div>';
-              group.appendChild(a);
-            }
+            appendContributor(c);
           });
         })
         .catch(function() {});

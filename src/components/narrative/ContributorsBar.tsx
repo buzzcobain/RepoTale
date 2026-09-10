@@ -28,24 +28,72 @@ export const ContributorsBar: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('https://api.github.com/repos/buzzcobain/RepoTale/contributors')
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: Contributor[]) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          const logins = new Set(data.map((c) => c.login));
-          const merged = [
-            ...data,
-            ...DEFAULT_CONTRIBUTORS.filter((dc) => !logins.has(dc.login)),
-          ];
-          setContributors(merged);
+
+    async function loadContributors() {
+      const detected = new Map<string, Contributor>();
+
+      // Seed with default contributors
+      for (const def of DEFAULT_CONTRIBUTORS) {
+        detected.set(def.login.toLowerCase(), def);
+      }
+
+      // 1. Fetch merged PRs (Instant real-time sync with 0 delay)
+      try {
+        const prsRes = await fetch(
+          'https://api.github.com/repos/buzzcobain/RepoTale/pulls?state=closed&per_page=50'
+        );
+        if (prsRes.ok) {
+          const prs = await prsRes.json();
+          if (Array.isArray(prs)) {
+            for (const pr of prs) {
+              if (pr.merged_at && pr.user && pr.user.login) {
+                const loginKey = pr.user.login.toLowerCase();
+                const existing = detected.get(loginKey);
+                detected.set(loginKey, {
+                  login: pr.user.login,
+                  avatar_url: pr.user.avatar_url || `https://github.com/${pr.user.login}.png`,
+                  html_url: pr.user.html_url || `https://github.com/${pr.user.login}`,
+                  contributions: (existing?.contributions || 0) + 1,
+                });
+              }
+            }
+          }
         }
-      })
-      .catch(() => {
-        // Graceful fallback to default contributors
-      });
+      } catch {
+        // Fall through to contributors endpoint
+      }
+
+      // 2. Fetch from GitHub Contributors endpoint
+      try {
+        const contribRes = await fetch(
+          'https://api.github.com/repos/buzzcobain/RepoTale/contributors'
+        );
+        if (contribRes.ok) {
+          const contribs = await contribRes.json();
+          if (Array.isArray(contribs)) {
+            for (const c of contribs) {
+              if (c.login) {
+                const loginKey = c.login.toLowerCase();
+                detected.set(loginKey, {
+                  login: c.login,
+                  avatar_url: c.avatar_url || `https://github.com/${c.login}.png`,
+                  html_url: c.html_url || `https://github.com/${c.login}`,
+                  contributions: c.contributions || 1,
+                });
+              }
+            }
+          }
+        }
+      } catch {
+        // Fall through
+      }
+
+      if (isMounted && detected.size > 0) {
+        setContributors(Array.from(detected.values()));
+      }
+    }
+
+    loadContributors();
 
     return () => {
       isMounted = false;
