@@ -153,6 +153,18 @@ Contributions are warmly welcomed! RepoTale is an open-source community effort.
 
 ---
 
+## 👥 Contributors
+
+Huge thanks to all the amazing people who have contributed to RepoTale!
+
+<a href="https://github.com/buzzcobain/RepoTale/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=buzzcobain/RepoTale" alt="RepoTale Contributors" />
+</a>
+
+Contributions of any kind are welcome! Check out our **[Contributing Guide](./CONTRIBUTING.md)** to get involved.
+
+---
+
 ## 📄 License
 
 This project is licensed under the Apache License, Version 2.0. See the [LICENSE](./LICENSE) file for the full license text.

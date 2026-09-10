@@ -8,6 +8,7 @@ import {
   ExternalLink, ArrowRight, Rocket, Globe, FileCode2
 } from 'lucide-react';
 import { RepoTaleLogoLockup } from '../common/RepoTaleLogo';
+import { ContributorsBar } from './ContributorsBar';
 
 export const NarrativePane: React.FC = () => {
   const { story, activeChapterIndex, setActiveChapterIndex, loadStory } = useStory();
@@ -160,6 +161,9 @@ export const NarrativePane: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Open-Source Contributors */}
+          <ContributorsBar />
 
           {/* Action Buttons & Live Demo Switcher */}
           <div className="pt-4 border-t border-base-300 flex flex-col gap-3">
