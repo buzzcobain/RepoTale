@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::fs;
 use walkdir::WalkDir;
-use tree_sitter::{Language, Parser, Query, QueryCursor};
+use tree_sitter::{Language, Node, Parser, Query, QueryCursor, Tree};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AstSymbol {
@@ -47,6 +47,9 @@ pub struct RepoAstParser {
     ts_parser: Parser,
     python_parser: Parser,
     rust_parser: Parser,
+    go_parser: Parser,
+    java_parser: Parser,
+    csharp_parser: Parser,
 }
 
 impl RepoAstParser {
@@ -63,10 +66,25 @@ impl RepoAstParser {
         let rs_lang: Language = tree_sitter_rust::LANGUAGE.into();
         let _ = rust_parser.set_language(&rs_lang);
 
+        let mut go_parser = Parser::new();
+        let go_lang: Language = tree_sitter_go::LANGUAGE.into();
+        let _ = go_parser.set_language(&go_lang);
+
+        let mut java_parser = Parser::new();
+        let java_lang: Language = tree_sitter_java::LANGUAGE.into();
+        let _ = java_parser.set_language(&java_lang);
+
+        let mut csharp_parser = Parser::new();
+        let cs_lang: Language = tree_sitter_c_sharp::LANGUAGE.into();
+        let _ = csharp_parser.set_language(&cs_lang);
+
         Self {
             ts_parser,
             python_parser,
             rust_parser,
+            go_parser,
+            java_parser,
+            csharp_parser,
         }
     }
 
@@ -100,6 +118,18 @@ impl RepoAstParser {
                         }
                         "rs" => {
                             let file_symbols = self.parse_rs_file(path, &rel_path);
+                            symbols.extend(file_symbols);
+                        }
+                        "go" => {
+                            let file_symbols = self.parse_go_file(path, &rel_path);
+                            symbols.extend(file_symbols);
+                        }
+                        "java" => {
+                            let file_symbols = self.parse_java_file(path, &rel_path);
+                            symbols.extend(file_symbols);
+                        }
+                        "cs" => {
+                            let file_symbols = self.parse_cs_file(path, &rel_path);
                             symbols.extend(file_symbols);
                         }
                         _ => {}
@@ -320,7 +350,193 @@ impl RepoAstParser {
 
         symbols
     }
+
+    fn parse_go_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
+        let content = match fs::read_to_string(full_path) {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+
+        let tree = match self.go_parser.parse(&content, None) {
+            Some(t) => t,
+            None => return Vec::new(),
+        };
+
+        let lang: Language = tree_sitter_go::LANGUAGE.into();
+        let package = collect_query_texts(&lang, GO_PACKAGE_QUERY, &tree, &content);
+        let imports = collect_query_texts(&lang, GO_IMPORT_QUERY, &tree, &content)
+            .into_iter()
+            .map(|i| i.trim_matches('"').trim_matches('`').to_string())
+            .collect::<Vec<String>>();
+        let goroutines = collect_query_texts(&lang, GO_GOROUTINE_QUERY, &tree, &content);
+        let is_main_package = package.iter().any(|p| p == "main");
+
+        let mut symbols = build_symbols(
+            &lang,
+            GO_SYMBOL_QUERY,
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, kind, _decorators| {
+                if goroutines.iter().any(|g| g == name) {
+                    return "entry".to_string();
+                }
+                if is_main_package && (name == "main" || name == "init") {
+                    return "entry".to_string();
+                }
+                if kind == "interface" {
+                    return "service".to_string();
+                }
+                if kind == "struct" {
+                    return "data".to_string();
+                }
+                classify_node_type(file_path, name)
+            },
+        );
+
+        if symbols.is_empty() {
+            symbols = fallback_extract_symbols(&content, rel_path, "go");
+        }
+
+        symbols
+    }
+
+    fn parse_java_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
+        let content = match fs::read_to_string(full_path) {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+
+        let tree = match self.java_parser.parse(&content, None) {
+            Some(t) => t,
+            None => return Vec::new(),
+        };
+
+        let lang: Language = tree_sitter_java::LANGUAGE.into();
+        let imports = collect_query_texts(&lang, JAVA_IMPORT_QUERY, &tree, &content);
+
+        let mut symbols = build_symbols(
+            &lang,
+            JAVA_SYMBOL_QUERY,
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, _kind, decorators| {
+                if let Some(node_type) = classify_java_annotation(decorators) {
+                    return node_type;
+                }
+                if name.ends_with("Repository") || name.ends_with("Entity") {
+                    return "data".to_string();
+                }
+                if name.ends_with("Controller") {
+                    return "entry".to_string();
+                }
+                if name.ends_with("Service") {
+                    return "service".to_string();
+                }
+                classify_node_type(&strip_jvm_source_root(file_path), name)
+            },
+        );
+
+        if symbols.is_empty() {
+            symbols = fallback_extract_symbols(&content, rel_path, "java");
+        }
+
+        symbols
+    }
+
+    fn parse_cs_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
+        let content = match fs::read_to_string(full_path) {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+
+        let tree = match self.csharp_parser.parse(&content, None) {
+            Some(t) => t,
+            None => return Vec::new(),
+        };
+
+        let lang: Language = tree_sitter_c_sharp::LANGUAGE.into();
+        let imports = collect_query_texts(&lang, CSHARP_IMPORT_QUERY, &tree, &content);
+
+        let mut symbols = build_symbols(
+            &lang,
+            CSHARP_SYMBOL_QUERY,
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, _kind, decorators| {
+                if let Some(node_type) = classify_csharp_attribute(decorators) {
+                    return node_type;
+                }
+                if name.ends_with("Controller") {
+                    return "entry".to_string();
+                }
+                if name.ends_with("Service") || name.ends_with("Handler") {
+                    return "service".to_string();
+                }
+                if name.ends_with("Repository") || name.ends_with("DbContext") {
+                    return "data".to_string();
+                }
+                classify_node_type(file_path, name)
+            },
+        );
+
+        if symbols.is_empty() {
+            symbols = fallback_extract_symbols(&content, rel_path, "cs");
+        }
+
+        symbols
+    }
 }
+
+const GO_SYMBOL_QUERY: &str = r#"
+    (function_declaration name: (identifier) @function.name) @function.def
+    (method_declaration name: (field_identifier) @method.name) @method.def
+    (type_declaration (type_spec name: (type_identifier) @struct.name type: (struct_type))) @struct.def
+    (type_declaration (type_spec name: (type_identifier) @interface.name type: (interface_type))) @interface.def
+"#;
+
+const GO_IMPORT_QUERY: &str = r#"
+    (import_spec path: (interpreted_string_literal) @import.path)
+"#;
+
+const GO_PACKAGE_QUERY: &str = r#"
+    (package_clause (package_identifier) @package.name)
+"#;
+
+const GO_GOROUTINE_QUERY: &str = r#"
+    (go_statement (call_expression function: (identifier) @goroutine.name))
+    (go_statement (call_expression function: (selector_expression field: (field_identifier) @goroutine.name)))
+"#;
+
+const JAVA_SYMBOL_QUERY: &str = r#"
+    (class_declaration name: (identifier) @class.name) @class.def
+    (interface_declaration name: (identifier) @interface.name) @interface.def
+    (record_declaration name: (identifier) @record.name) @record.def
+    (enum_declaration name: (identifier) @enum.name) @enum.def
+    (method_declaration name: (identifier) @method.name) @method.def
+"#;
+
+const JAVA_IMPORT_QUERY: &str = r#"
+    (import_declaration (scoped_identifier) @import.name)
+"#;
+
+const CSHARP_SYMBOL_QUERY: &str = r#"
+    (class_declaration name: (identifier) @class.name) @class.def
+    (record_declaration name: (identifier) @record.name) @record.def
+    (struct_declaration name: (identifier) @struct.name) @struct.def
+    (interface_declaration name: (identifier) @interface.name) @interface.def
+    (method_declaration name: (identifier) @method.name) @method.def
+"#;
+
+const CSHARP_IMPORT_QUERY: &str = r#"
+    (using_directive (qualified_name) @import.name)
+    (using_directive (identifier) @import.name)
+"#;
 
 fn is_ignored(path: &Path) -> bool {
     let s = path.to_string_lossy();
@@ -348,6 +564,196 @@ fn classify_node_type(file_path: &str, symbol_name: &str) -> String {
     } else {
         "utility".to_string()
     }
+}
+
+fn collect_query_texts(lang: &Language, query_str: &str, tree: &Tree, content: &str) -> Vec<String> {
+    let mut results = Vec::new();
+    let query = match Query::new(lang, query_str) {
+        Ok(q) => q,
+        Err(_) => return results,
+    };
+
+    let mut cursor = QueryCursor::new();
+    let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
+    for m in matches {
+        for cap in m.captures {
+            if let Ok(text) = cap.node.utf8_text(content.as_bytes()) {
+                let value = text.to_string();
+                if !value.is_empty() && !results.contains(&value) {
+                    results.push(value);
+                }
+            }
+        }
+    }
+
+    results
+}
+
+fn build_symbols(
+    lang: &Language,
+    query_str: &str,
+    tree: &Tree,
+    content: &str,
+    rel_path: &str,
+    imports: &[String],
+    classify: &dyn Fn(&str, &str, &str, &[String]) -> String,
+) -> Vec<AstSymbol> {
+    let mut symbols = Vec::new();
+    let query = match Query::new(lang, query_str) {
+        Ok(q) => q,
+        Err(_) => return symbols,
+    };
+
+    let lines: Vec<&str> = content.lines().collect();
+    let capture_names = query.capture_names();
+    let mut cursor = QueryCursor::new();
+    let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
+
+    for m in matches {
+        let mut kind = String::new();
+        let mut name = String::new();
+        let mut def_node: Option<Node> = None;
+
+        for cap in m.captures {
+            let capture_name = capture_names[cap.index as usize];
+            if let Some(prefix) = capture_name.strip_suffix(".name") {
+                kind = prefix.to_string();
+                name = cap
+                    .node
+                    .utf8_text(content.as_bytes())
+                    .unwrap_or("")
+                    .to_string();
+            } else if capture_name.ends_with(".def") {
+                def_node = Some(cap.node);
+            }
+        }
+
+        if name.is_empty() {
+            continue;
+        }
+
+        let node = match def_node {
+            Some(n) => n,
+            None => continue,
+        };
+
+        let start_line = node.start_position().row + 1;
+        let end_line = node.end_position().row + 1;
+        let decorators = collect_decorators(node, content.as_bytes());
+        let node_type = classify(rel_path, &name, &kind, &decorators);
+        let snippet = get_snippet(&lines, start_line, end_line);
+
+        symbols.push(AstSymbol {
+            name,
+            kind,
+            file_path: rel_path.to_string(),
+            start_line,
+            end_line,
+            node_type,
+            calls: extract_calls(content, start_line, end_line),
+            imports: imports.to_vec(),
+            snippet,
+        });
+    }
+
+    symbols
+}
+
+fn collect_decorators(node: Node, source: &[u8]) -> Vec<String> {
+    let mut decorators = extract_decorators(node, source);
+    let mut current = node.parent();
+
+    while let Some(parent) = current {
+        if is_type_declaration(parent.kind()) {
+            for decorator in extract_decorators(parent, source) {
+                if !decorators.contains(&decorator) {
+                    decorators.push(decorator);
+                }
+            }
+        }
+        current = parent.parent();
+    }
+
+    decorators
+}
+
+fn is_type_declaration(kind: &str) -> bool {
+    matches!(
+        kind,
+        "class_declaration"
+            | "interface_declaration"
+            | "record_declaration"
+            | "enum_declaration"
+            | "struct_declaration"
+    )
+}
+
+fn strip_jvm_source_root(file_path: &str) -> String {
+    file_path
+        .replace("src/main/java/", "")
+        .replace("src/test/java/", "")
+        .replace("src/main/kotlin/", "")
+        .replace("src/test/kotlin/", "")
+}
+
+fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
+    let mut decorators = Vec::new();
+    let mut walker = node.walk();
+
+    for child in node.children(&mut walker) {
+        let child_kind = child.kind();
+        if child_kind != "modifiers" && child_kind != "attribute_list" {
+            continue;
+        }
+
+        let text = match child.utf8_text(source) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+
+        let re = match regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)") {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+
+        for cap in re.captures_iter(text) {
+            if let Some(m) = cap.get(1) {
+                let value = m.as_str().to_string();
+                if !decorators.contains(&value) {
+                    decorators.push(value);
+                }
+            }
+        }
+    }
+
+    decorators
+}
+
+fn classify_java_annotation(decorators: &[String]) -> Option<String> {
+    for decorator in decorators {
+        let node_type = match decorator.as_str() {
+            "RestController" | "Controller" | "SpringBootApplication" => "entry",
+            "Service" | "Component" | "Bean" => "service",
+            "Repository" | "Entity" | "Table" | "Document" => "data",
+            "Configuration" | "ControllerAdvice" | "Aspect" | "Order" => "middleware",
+            _ => continue,
+        };
+        return Some(node_type.to_string());
+    }
+    None
+}
+
+fn classify_csharp_attribute(decorators: &[String]) -> Option<String> {
+    for decorator in decorators {
+        let node_type = match decorator.as_str() {
+            "ApiController" | "Route" | "HttpGet" | "HttpPost" | "HttpPut" | "HttpDelete" => "entry",
+            "Authorize" | "AllowAnonymous" | "ServiceFilter" => "middleware",
+            "Table" | "Keyless" | "Owned" => "data",
+            _ => continue,
+        };
+        return Some(node_type.to_string());
+    }
+    None
 }
 
 fn get_snippet(lines: &[&str], start: usize, end: usize) -> String {
@@ -386,6 +792,9 @@ fn fallback_extract_symbols(content: &str, file_path: &str, ext: &str) -> Vec<As
         "ts" | "js" => regex::Regex::new(r"(?:export\s+)?(?:async\s+)?(?:function|class|const)\s+([a-zA-Z0-9_]+)").unwrap(),
         "py" => regex::Regex::new(r"(?:def|class)\s+([a-zA-Z0-9_]+)").unwrap(),
         "rs" => regex::Regex::new(r"(?:pub\s+)?(?:fn|struct|enum|trait)\s+([a-zA-Z0-9_]+)").unwrap(),
+        "go" => regex::Regex::new(r"(?:func|type)\s+(?:\([^)]*\)\s*)?([a-zA-Z0-9_]+)").unwrap(),
+        "java" => regex::Regex::new(r"(?:class|interface|record|enum)\s+([a-zA-Z0-9_]+)").unwrap(),
+        "cs" => regex::Regex::new(r"(?:class|interface|record|struct)\s+([a-zA-Z0-9_]+)").unwrap(),
         _ => return symbols,
     };
 

@@ -24,6 +24,10 @@ tree-sitter = "0.23"
 tree-sitter-typescript = "0.23"
 tree-sitter-python = "0.23"
 tree-sitter-rust = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-java = "0.23"
+# Pinned: tree-sitter-c-sharp 0.23.5+ ships grammar ABI 15, which tree-sitter 0.23 cannot load.
+tree-sitter-c-sharp = "=0.23.1"
 keyring = "2.1"
 uuid = { version = "1.6", features = ["v4"] }
 walkdir = "2.4"
