@@ -188,27 +188,30 @@ impl RepoAstParser {
                 }
 
                 // Resolve best candidate using imports and module proximity
-                let best_target = matching_targets.iter().find(|target| {
+                let best_target = matching_targets.iter().copied().find(|target| {
                     let target_file_no_ext = Path::new(&target.file_path)
                         .file_stem()
                         .map(|s| s.to_string_lossy().to_string())
                         .unwrap_or_default();
 
-                    // 1. Direct import match
+                    let target_dir = Path::new(&target.file_path)
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
+
+                    // 1. Direct import or namespace/package match
                     let imported = sym.imports.iter().any(|imp| {
+                        let imp_last = imp.split(&['.', '/', ':']).last().unwrap_or(imp);
                         imp.contains(&target.file_path)
                             || imp.contains(&target_file_no_ext)
                             || imp.contains(&target.name)
+                            || (!target_dir.is_empty() && (imp_last.eq_ignore_ascii_case(&target_dir) || imp.to_lowercase().contains(&target_dir.to_lowercase())))
                     });
                     if imported {
                         return true;
                     }
 
                     // 2. Same directory / package module proximity
-                    let target_dir = Path::new(&target.file_path)
-                        .parent()
-                        .map(|p| p.to_string_lossy().to_string())
-                        .unwrap_or_default();
                     if !source_dir.is_empty() && source_dir == target_dir {
                         return true;
                     }
