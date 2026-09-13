@@ -1,5 +1,6 @@
 import { RepoTaleStory } from '../types/story';
 import { ExportOptions } from '../types/api';
+import { HOW_IT_WORKS_STEPS } from './sharedExportTokens';
 
 export function generateMarkdownReadme(story: RepoTaleStory, options: ExportOptions): string {
   const user = options.githubUsername || 'username';
@@ -159,6 +160,18 @@ export function generateStandaloneHtml(
 
   const preRenderedChapters = renderedChaptersByStory['repotale'] || renderedChaptersByStory[Object.keys(renderedChaptersByStory)[0]] || '';
   const jsonChaptersHtmlByStory = JSON.stringify(renderedChaptersByStory).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+
+  const howItWorksHtml = HOW_IT_WORKS_STEPS.map(item => `
+    <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
+      <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
+        <span>${escapeXml(item.step)}</span>
+      </div>
+      <h3 class="text-xs font-semibold text-slate-200 mb-1">${escapeXml(item.title)}</h3>
+      <p class="text-[11px] text-slate-400 leading-relaxed">
+        ${escapeXml(item.description)}
+      </p>
+    </div>
+  `).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en" class="dark" data-theme="dim">
@@ -450,35 +463,7 @@ export function generateStandaloneHtml(
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                <span>01. INGEST</span>
-              </div>
-              <h3 class="text-xs font-semibold text-slate-200 mb-1">Point to Any Codebase</h3>
-              <p class="text-[11px] text-slate-400 leading-relaxed">
-                Provide a GitHub URL or local repository folder. Tree-sitter extracts functions, call-sites, and imports across TS, Python, Rust, and Go.
-              </p>
-            </div>
-
-            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                <span>02. VISUALIZE</span>
-              </div>
-              <h3 class="text-xs font-semibold text-slate-200 mb-1">Auto-Generate Story</h3>
-              <p class="text-[11px] text-slate-400 leading-relaxed">
-                Generates an interactive chapter-by-chapter guided walkthrough synchronized with an animated React Flow call graph.
-              </p>
-            </div>
-
-            <div class="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-              <div class="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                <span>03. PUBLISH</span>
-              </div>
-              <h3 class="text-xs font-semibold text-slate-200 mb-1">Host Free Anywhere</h3>
-              <p class="text-[11px] text-slate-400 leading-relaxed">
-                Emits a zero-dependency <code class="px-1 py-0.5 rounded bg-base-200 text-slate-300 font-mono text-[10px]">/docs/index.html</code>. Host 100% free on GitHub Pages, Netlify, Cloudflare, or your custom domain.
-              </p>
-            </div>
+            ${howItWorksHtml}
           </div>
         </div>
 
@@ -769,6 +754,26 @@ export function generateStandaloneHtml(
       }
     };
 
+    function getClusterColor(clusterName) {
+      if (!clusterName || clusterName === 'root') {
+        return { border: '#272a34', bg: 'rgba(39, 42, 52, 0.03)', text: '#94a3b8' };
+      }
+      var hash = 0;
+      for (var i = 0; i < clusterName.length; i++) {
+        hash = (hash << 5) - hash + clusterName.charCodeAt(i);
+        hash |= 0;
+      }
+      var colors = [
+        { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.04)', text: '#60a5fa' },
+        { border: '#10b981', bg: 'rgba(16, 185, 129, 0.04)', text: '#34d399' },
+        { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.04)', text: '#fbbf24' },
+        { border: '#a855f7', bg: 'rgba(168, 85, 247, 0.04)', text: '#c084fc' },
+        { border: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.04)', text: '#38bdf8' },
+        { border: '#ec4899', bg: 'rgba(236, 72, 153, 0.04)', text: '#f472b6' }
+      ];
+      return colors[Math.abs(hash) % colors.length];
+    }
+
     function escapeHtml(text) {
       return (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
@@ -916,6 +921,12 @@ export function generateStandaloneHtml(
           ? 'active-node'
           : 'inactive-node';
 
+        let clusterBadge = '';
+        if (node.cluster) {
+          const cc = getClusterColor(node.cluster);
+          clusterBadge = \`<span class="badge badge-xs font-mono text-[9px] px-1 py-0 truncate max-w-[85px]" style="border-color: \${cc.border}; color: \${cc.text}; background-color: \${cc.bg};" title="Module: \${escapeHtml(node.cluster)}">\${escapeHtml(node.cluster)}</span>\`;
+        }
+
         nodesHtml += \`
           <div
             id="node-\${CSS.escape(node.id)}"
@@ -927,15 +938,16 @@ export function generateStandaloneHtml(
             <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-400 border border-slate-900"></div>
             <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-400 border border-slate-900"></div>
 
-            <!-- Top Row: Icon & Badge -->
+            <!-- Top Row: Icon, Badge & Optional Cluster -->
             <div class="flex items-center justify-between mb-1.5">
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-1.5 min-w-0">
                 \${style.iconSvg}
                 <span class="badge badge-xs badge-outline \${style.badgeClass} font-mono text-[10px]">
                   \${style.badgeText}
                 </span>
+                \${clusterBadge}
               </div>
-              <span class="beacon w-2 h-2 rounded-full bg-primary \${isActive ? '' : 'hidden'}" title="Active node in story"></span>
+              <span class="beacon w-2 h-2 rounded-full bg-primary \${isActive ? '' : 'hidden'} shrink-0" title="Active node in story"></span>
             </div>
 
             <!-- Title -->

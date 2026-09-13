@@ -7,6 +7,7 @@ export interface CallGraphNode {
   filePath: string;
   lineRange: [number, number];
   description?: string;
+  cluster?: string;
 }
 
 export interface CallGraphEdge {

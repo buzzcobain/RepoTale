@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { NodeType } from '../../types/story';
 import { Play, Shield, Cpu, Database, Wrench } from 'lucide-react';
+import { getClusterColor } from '../../services/sharedExportTokens';
 
 interface CustomNodeData {
   id: string;
@@ -10,6 +11,7 @@ interface CustomNodeData {
   filePath: string;
   lineRange: [number, number];
   description?: string;
+  cluster?: string;
   isActive?: boolean;
   isSelected?: boolean;
 }
@@ -51,6 +53,7 @@ export const CodeSymbolNode: React.FC<NodeProps> = memo(({ data }) => {
   const style = typeStyles[nodeData.type] || typeStyles.utility;
   const isActive = nodeData.isActive;
   const isSelected = nodeData.isSelected;
+  const clusterColor = nodeData.cluster ? getClusterColor(nodeData.cluster) : null;
 
   return (
     <div
@@ -68,16 +71,29 @@ export const CodeSymbolNode: React.FC<NodeProps> = memo(({ data }) => {
         className="!bg-slate-400 !w-2 !h-2 !border-[#0e121a]"
       />
 
-      {/* Top row: Icon & Type Badge */}
+      {/* Top row: Icon, Type Badge & Optional Cluster Pill */}
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           {style.icon}
           <span className={`badge badge-xs badge-outline ${style.badgeClass} font-mono text-[10px]`}>
             {style.badgeText}
           </span>
+          {nodeData.cluster && clusterColor && (
+            <span
+              className="badge badge-xs font-mono text-[9px] px-1 py-0 truncate max-w-[85px]"
+              style={{
+                borderColor: clusterColor.border,
+                color: clusterColor.text,
+                backgroundColor: clusterColor.bg,
+              }}
+              title={`Module: ${nodeData.cluster}`}
+            >
+              {nodeData.cluster}
+            </span>
+          )}
         </div>
         {isActive && (
-          <span className="w-2 h-2 rounded-full bg-primary" title="Active node in story" />
+          <span className="w-2 h-2 rounded-full bg-primary shrink-0" title="Active node in story" />
         )}
       </div>
 
