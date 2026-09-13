@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::fs;
+use std::sync::OnceLock;
 use walkdir::WalkDir;
 use tree_sitter::{Language, Node, Parser, Query, QueryCursor, Tree};
 
@@ -539,12 +540,14 @@ const CSHARP_IMPORT_QUERY: &str = r#"
 "#;
 
 fn is_ignored(path: &Path) -> bool {
-    let s = path.to_string_lossy();
+    let s = path.to_string_lossy().replace('\\', "/");
     s.contains("/.git")
         || s.contains("/node_modules")
         || s.contains("/target")
         || s.contains("/dist")
         || s.contains("/build")
+        || s.contains("/bin")
+        || s.contains("/obj")
         || s.contains("/.venv")
         || s.contains("/__pycache__")
 }
@@ -697,6 +700,11 @@ fn strip_jvm_source_root(file_path: &str) -> String {
 }
 
 fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
+    static DECORATOR_RE: OnceLock<regex::Regex> = OnceLock::new();
+    let re = DECORATOR_RE.get_or_init(|| {
+        regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)")
+            .expect("decorator regex is valid")
+    });
     let mut decorators = Vec::new();
     let mut walker = node.walk();
 
@@ -708,11 +716,6 @@ fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
 
         let text = match child.utf8_text(source) {
             Ok(t) => t,
-            Err(_) => continue,
-        };
-
-        let re = match regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)") {
-            Ok(r) => r,
             Err(_) => continue,
         };
 
