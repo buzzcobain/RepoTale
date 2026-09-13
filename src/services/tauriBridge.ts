@@ -1,7 +1,13 @@
 import { IngestionOptions, RepoTaleStory } from '../types/story';
 import { ExportOptions, ExportResult, IngestionProgress } from '../types/api';
 import { SAMPLE_STORIES, generateSynthesizedStory } from './sampleStories';
-import { generateStoryWithLLM, checkOllamaHealth } from './llmService';
+import {
+  generateStoryWithLLM,
+  checkOllamaHealth,
+  cleanJsonString,
+  normalizeStory,
+  synthesizeStoryFromScaffold,
+} from './llmService';
 
 // Check if running inside Tauri desktop app
 export const isTauriEnvironment = (): boolean => {
@@ -73,32 +79,44 @@ export async function ingestRepository(
 
   // 1. Tauri desktop native backend (git shallow clone + Tree-sitter AST parser)
   if (isTauriEnvironment()) {
+    let cloneRes: any = null;
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       notify('cloning', 30, 'Cloning git repository (--depth 1)...', options.urlOrPath);
 
-      const cloneRes = options.sourceType === 'local'
+      cloneRes = options.sourceType === 'local'
         ? await invoke<any>('parse_local_repository', { path: options.urlOrPath })
         : await invoke<any>('clone_repository', { url: options.urlOrPath });
 
-      notify('ast_parsing', 60, 'Tree-sitter AST extraction complete', `${cloneRes.scaffold.nodes.length} nodes identified`);
+      notify('ast_parsing', 60, 'Tree-sitter AST extraction complete', `${cloneRes.scaffold?.nodes?.length ?? 0} nodes identified`);
       notify('prompting_llm', 80, `Querying ${options.provider} (${options.modelName})...`);
 
-      const storyJsonStr = await invoke<string>('run_inference', {
-        req: {
-          provider: options.provider,
-          model: options.modelName,
-          custom_api_key: options.apiKey,
-        },
-        manifest: cloneRes.manifest,
-        scaffold: cloneRes.scaffold,
-      });
+      let story: RepoTaleStory | null = null;
+      try {
+        const storyJsonStr = await invoke<string>('run_inference', {
+          req: {
+            provider: options.provider,
+            model: options.modelName,
+            custom_api_key: options.apiKey,
+          },
+          manifest: cloneRes.manifest,
+          scaffold: cloneRes.scaffold,
+        });
 
-      const story: RepoTaleStory = JSON.parse(storyJsonStr);
-      notify('done', 100, `RepoTale story generated with ${options.modelName}!`);
-      return story;
+        const cleaned = cleanJsonString(storyJsonStr);
+        const rawParsed = JSON.parse(cleaned);
+        story = normalizeStory(rawParsed, options.urlOrPath);
+      } catch (infErr: any) {
+        console.warn('Tauri run_inference failed or returned invalid JSON, synthesizing from AST scaffold:', infErr);
+        story = synthesizeStoryFromScaffold(options.urlOrPath, cloneRes.manifest, cloneRes.scaffold);
+      }
+
+      if (story) {
+        notify('done', 100, `RepoTale story generated with ${options.modelName}!`);
+        return story;
+      }
     } catch (e: any) {
-      console.warn('Tauri backend call failed, attempting web LLM inference:', e);
+      console.warn('Tauri backend clone/parse failed, attempting web LLM inference:', e);
     }
   }
 

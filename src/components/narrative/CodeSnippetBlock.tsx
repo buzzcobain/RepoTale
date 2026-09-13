@@ -11,12 +11,13 @@ export const CodeSnippetBlock: React.FC<CodeSnippetBlockProps> = ({ snippet, isH
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(snippet.code);
+    navigator.clipboard.writeText(snippet?.code || '');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const fileName = snippet.filePath.split('/').pop() || snippet.filePath;
+  const filePath = snippet?.filePath || 'unknown';
+  const fileName = filePath.split('/').pop() || filePath;
 
   return (
     <div

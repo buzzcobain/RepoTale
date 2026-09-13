@@ -104,11 +104,11 @@ export const CodeSymbolNode: React.FC<NodeProps> = memo(({ data }) => {
 
       {/* File Path & Line Range */}
       <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-        <span className="truncate max-w-[125px]" title={nodeData.filePath}>
-          {nodeData.filePath.split('/').pop()}
+        <span className="truncate max-w-[125px]" title={nodeData.filePath || ''}>
+          {(nodeData.filePath || '').split('/').pop() || nodeData.filePath || 'module'}
         </span>
         <span className="text-slate-500">
-          L{nodeData.lineRange[0]}-{nodeData.lineRange[1]}
+          {Array.isArray(nodeData.lineRange) ? `L${nodeData.lineRange[0]}-${nodeData.lineRange[1]}` : ''}
         </span>
       </div>
 

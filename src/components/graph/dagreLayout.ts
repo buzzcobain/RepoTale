@@ -3,10 +3,17 @@ import { Node, Edge } from '@xyflow/react';
 import { CallGraphNode, CallGraphEdge } from '../../types/story';
 
 export const getLayoutedElements = (
-  nodes: CallGraphNode[],
-  edges: CallGraphEdge[],
+  nodes: CallGraphNode[] = [],
+  edges: CallGraphEdge[] = [],
   direction: 'TB' | 'LR' = 'TB'
 ): { nodes: Node[]; edges: Edge[] } => {
+  const safeNodes = Array.isArray(nodes) ? nodes : [];
+  const safeEdges = Array.isArray(edges) ? edges : [];
+
+  if (safeNodes.length === 0) {
+    return { nodes: [], edges: [] };
+  }
+
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -21,18 +28,29 @@ export const getLayoutedElements = (
     marginy: 40,
   });
 
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  safeNodes.forEach((node) => {
+    if (node?.id) {
+      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    }
   });
 
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
+  safeEdges.forEach((edge) => {
+    if (edge?.source && edge?.target) {
+      dagreGraph.setEdge(edge.source, edge.target);
+    }
   });
 
-  dagre.layout(dagreGraph);
+  try {
+    dagre.layout(dagreGraph);
+  } catch (err) {
+    console.warn('Dagre layout failed, using fallback grid:', err);
+  }
 
-  const layoutedNodes: Node[] = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
+  const layoutedNodes: Node[] = safeNodes.map((node, idx) => {
+    const nodeWithPosition = dagreGraph.node(node.id) || {
+      x: 100 + (idx % 3) * 280,
+      y: 100 + Math.floor(idx / 3) * 140,
+    };
     return {
       id: node.id,
       type: 'codeSymbol',
@@ -47,8 +65,8 @@ export const getLayoutedElements = (
     };
   });
 
-  const layoutedEdges: Edge[] = edges.map((edge) => ({
-    id: edge.id,
+  const layoutedEdges: Edge[] = safeEdges.map((edge, idx) => ({
+    id: edge.id || `e-${idx + 1}`,
     source: edge.source,
     target: edge.target,
     label: edge.label,

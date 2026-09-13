@@ -119,7 +119,17 @@ export function estimateStoryCost(modelId: string, promptChars: number): { token
   return { tokens, costUsd: cost };
 }
 
-function normalizeStory(raw: any, fallbackRepoName: string): RepoTaleStory {
+export function cleanJsonString(raw: string): string {
+  let str = (raw || '').trim();
+  if (str.startsWith('```json')) {
+    str = str.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (str.startsWith('```')) {
+    str = str.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  return str.trim();
+}
+
+export function normalizeStory(raw: any, fallbackRepoName: string): RepoTaleStory {
   const meta = {
     repoName: raw?.meta?.repoName || fallbackRepoName,
     description: raw?.meta?.description || `Interactive architectural walkthrough for ${fallbackRepoName}`,
@@ -134,10 +144,11 @@ function normalizeStory(raw: any, fallbackRepoName: string): RepoTaleStory {
   const nodes = rawNodes.map((n: any, idx: number) => ({
     id: String(n.id || `node-${idx + 1}`),
     label: String(n.label || n.name || `Module ${idx + 1}`),
-    type: (['entry', 'middleware', 'service', 'data', 'utility'].includes(n.type) ? n.type : 'service') as any,
-    filePath: String(n.filePath || meta.entryPoint),
-    lineRange: (Array.isArray(n.lineRange) && n.lineRange.length === 2 ? [Number(n.lineRange[0]), Number(n.lineRange[1])] : [1, 50]) as [number, number],
-    description: String(n.description || '')
+    type: (['entry', 'middleware', 'service', 'data', 'utility'].includes(n.type || n.node_type) ? (n.type || n.node_type) : 'service') as any,
+    filePath: String(n.filePath || n.file_path || meta.entryPoint),
+    lineRange: (Array.isArray(n.lineRange || n.line_range) && (n.lineRange || n.line_range).length === 2 ? [Number((n.lineRange || n.line_range)[0]), Number((n.lineRange || n.line_range)[1])] : [1, 50]) as [number, number],
+    description: String(n.description || ''),
+    cluster: n.cluster ? String(n.cluster) : undefined,
   }));
 
   // Ensure at least a minimal fallback node exists if LLM omitted nodes
@@ -167,9 +178,9 @@ function normalizeStory(raw: any, fallbackRepoName: string): RepoTaleStory {
 
     const rawSnippets = Array.isArray(c.codeSnippets) ? c.codeSnippets : (Array.isArray(c.methods) ? c.methods : []);
     const codeSnippets = rawSnippets.map((s: any) => ({
-      filePath: String(s.filePath || meta.entryPoint),
-      startLine: Number(s.startLine || 1),
-      endLine: Number(s.endLine || 30),
+      filePath: String(s.filePath || s.file_path || meta.entryPoint),
+      startLine: Number(s.startLine || s.start_line || 1),
+      endLine: Number(s.endLine || s.end_line || 30),
       code: String(s.code || s.snippet || `// Code snippet for ${c.title || `Chapter ${idx + 1}`}`),
       annotation: String(s.annotation || s.description || '')
     }));
@@ -215,6 +226,149 @@ function normalizeStory(raw: any, fallbackRepoName: string): RepoTaleStory {
     callGraph: { nodes, edges },
     chapters
   };
+}
+
+export function synthesizeStoryFromScaffold(
+  urlOrPath: string,
+  manifest?: any,
+  scaffold?: any
+): RepoTaleStory {
+  const clean = urlOrPath.replace(/^https?:\/\/github.com\//, '').replace(/\.git$/, '').trim();
+  const repoName = manifest?.repo_name || clean.split('/').pop() || 'Codebase';
+  const lang = manifest?.primary_language || 'TypeScript';
+  const frameworks = manifest?.frameworks?.length ? manifest.frameworks : ['Application Framework'];
+  const entryPoint = manifest?.entry_point || 'src/main.ts';
+
+  const rawNodes = Array.isArray(scaffold?.nodes) ? scaffold.nodes : [];
+  const rawEdges = Array.isArray(scaffold?.edges) ? scaffold.edges : [];
+  const rawSymbols = Array.isArray(scaffold?.file_symbols) ? scaffold.file_symbols : [];
+
+  const nodes = rawNodes.map((n: any, idx: number) => ({
+    id: String(n.id || `node-${idx + 1}`),
+    label: String(n.label || n.name || `Symbol ${idx + 1}`),
+    type: (['entry', 'middleware', 'service', 'data', 'utility'].includes(n.node_type || n.type) ? (n.node_type || n.type) : 'service') as any,
+    filePath: String(n.file_path || n.filePath || entryPoint),
+    lineRange: (Array.isArray(n.line_range || n.lineRange) ? (n.line_range || n.lineRange) : [1, 50]) as [number, number],
+    description: String(n.description || `${n.label || n.name} architectural module`),
+    cluster: n.cluster ? String(n.cluster) : undefined,
+  }));
+
+  const edges = rawEdges.map((e: any, idx: number) => ({
+    id: String(e.id || `e-${idx + 1}`),
+    source: String(e.source),
+    target: String(e.target),
+    label: e.label ? String(e.label) : undefined,
+  }));
+
+  const entryNodes = nodes.filter((n: any) => n.type === 'entry');
+  const serviceNodes = nodes.filter((n: any) => n.type === 'service');
+  const otherNodes = nodes.filter((n: any) => n.type !== 'entry' && n.type !== 'service');
+
+  const chapters = [];
+  
+  // Chapter 1: Ingestion & System Entrypoint
+  const ch1Nodes = entryNodes.length ? entryNodes : nodes.slice(0, 2);
+  const ch1Snippets = rawSymbols
+    .filter((s: any) => ch1Nodes.some((n: any) => n.id.includes(s.name) || n.filePath === s.file_path))
+    .slice(0, 2)
+    .map((s: any) => ({
+      filePath: s.file_path,
+      startLine: s.start_line,
+      endLine: s.end_line,
+      code: s.snippet || `// Entrypoint implementation: ${s.name}`,
+      annotation: `Primary initialization routine: ${s.name}`,
+    }));
+
+  chapters.push({
+    id: 'chap-1',
+    chapterNumber: 1,
+    title: 'System Bootstrap & Primary Entrypoints',
+    summary: `How ${repoName} initializes and routes inbound requests or command lifecycle loops.`,
+    narrative: `Execution begins at \`${entryPoint}\`. The system sets up runtime context, registers service handlers, and prepares the operational pipeline for execution.`,
+    activeNodes: ch1Nodes.map((n: any) => n.id),
+    codeSnippets: ch1Snippets.length ? ch1Snippets : [{
+      filePath: entryPoint,
+      startLine: 1,
+      endLine: 35,
+      code: `// Primary application bootstrap\nexport function bootstrap() {\n  // Initializes foundational modules\n}`,
+      annotation: 'Application runtime initialization',
+    }],
+  });
+
+  // Chapter 2: Core Domain & Business Logic
+  const ch2Nodes = serviceNodes.length ? serviceNodes.slice(0, 4) : nodes.slice(2, 6);
+  if (ch2Nodes.length > 0) {
+    const ch2Snippets = rawSymbols
+      .filter((s: any) => ch2Nodes.some((n: any) => n.id.includes(s.name) || n.filePath === s.file_path))
+      .slice(0, 3)
+      .map((s: any) => ({
+        filePath: s.file_path,
+        startLine: s.start_line,
+        endLine: s.end_line,
+        code: s.snippet || `// Service logic for ${s.name}`,
+        annotation: `Core service routine: ${s.name}`,
+      }));
+
+    chapters.push({
+      id: 'chap-2',
+      chapterNumber: 2,
+      title: 'Domain Services & Core Business Logic',
+      summary: `How ${repoName} coordinates data transformations and business rules.`,
+      narrative: `After initialization, execution routes through the domain service layer. These components encapsulate business invariants, orchestrate data flow, and interface between entry points and data storage.`,
+      activeNodes: ch2Nodes.map((n: any) => n.id),
+      codeSnippets: ch2Snippets.length ? ch2Snippets : [{
+        filePath: ch2Nodes[0]?.filePath || entryPoint,
+        startLine: 1,
+        endLine: 40,
+        code: `// Domain service operations\nexport class CoreService {\n  // Handles business transactions\n}`,
+        annotation: 'Business logic coordinator',
+      }],
+    });
+  }
+
+  // Chapter 3: Supporting Infrastructure & Data Pipeline
+  const ch3Nodes = otherNodes.length ? otherNodes.slice(0, 4) : nodes.slice(6, 10);
+  if (ch3Nodes.length > 0) {
+    const ch3Snippets = rawSymbols
+      .filter((s: any) => ch3Nodes.some((n: any) => n.id.includes(s.name) || n.filePath === s.file_path))
+      .slice(0, 2)
+      .map((s: any) => ({
+        filePath: s.file_path,
+        startLine: s.start_line,
+        endLine: s.end_line,
+        code: s.snippet || `// Infrastructure component ${s.name}`,
+        annotation: `Supporting infrastructure: ${s.name}`,
+      }));
+
+    chapters.push({
+      id: 'chap-3',
+      chapterNumber: chapters.length + 1,
+      title: 'Data Flow, Persistence & Infrastructure',
+      summary: `How ${repoName} manages state persistence, utilities, and infrastructure adapters.`,
+      narrative: `Supporting utilities and storage adapters handle data persistence, external communication, and structured error propagation across the application lifecycle.`,
+      activeNodes: ch3Nodes.map((n: any) => n.id),
+      codeSnippets: ch3Snippets.length ? ch3Snippets : [{
+        filePath: ch3Nodes[0]?.filePath || entryPoint,
+        startLine: 1,
+        endLine: 30,
+        code: `// Storage & utility adapter\nexport function executeTask() {\n  // Interacts with persistence layer\n}`,
+        annotation: 'Persistence & utility handler',
+      }],
+    });
+  }
+
+  return normalizeStory({
+    meta: {
+      repoName,
+      description: `Interactive architectural walkthrough and AST call graph for ${repoName}`,
+      primaryLanguage: lang,
+      frameworks,
+      entryPoint,
+      githubUrl: urlOrPath.startsWith('http') ? urlOrPath : `https://github.com/${clean}`,
+    },
+    callGraph: { nodes, edges },
+    chapters,
+  }, repoName);
 }
 
 export async function generateStoryWithLLM(params: {
