@@ -547,6 +547,9 @@ fn is_ignored(path: &Path) -> bool {
         || s.contains("/build")
         || s.contains("/.venv")
         || s.contains("/__pycache__")
+        || path.components().any(|component| {
+            matches!(component.as_os_str().to_str(), Some("bin" | "obj"))
+        })
 }
 
 fn classify_node_type(file_path: &str, symbol_name: &str) -> String {
@@ -697,6 +700,12 @@ fn strip_jvm_source_root(file_path: &str) -> String {
 }
 
 fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
+    static DECORATOR_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+    let re = DECORATOR_RE.get_or_init(|| {
+        regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)")
+            .expect("decorator regex must be valid")
+    });
     let mut decorators = Vec::new();
     let mut walker = node.walk();
 
@@ -708,11 +717,6 @@ fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
 
         let text = match child.utf8_text(source) {
             Ok(t) => t,
-            Err(_) => continue,
-        };
-
-        let re = match regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)") {
-            Ok(r) => r,
             Err(_) => continue,
         };
 
@@ -822,4 +826,18 @@ fn fallback_extract_symbols(content: &str, file_path: &str, ext: &str) -> Vec<As
         }
     }
     symbols
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_ignored;
+    use std::path::Path;
+
+    #[test]
+    fn ignores_dotnet_build_directories_by_component() {
+        assert!(is_ignored(Path::new("/repo/bin/Debug/Generated.cs")));
+        assert!(is_ignored(Path::new("/repo/obj/Debug/net8.0/App.g.cs")));
+        assert!(!is_ignored(Path::new("/repo/binary/Source.cs")));
+        assert!(!is_ignored(Path::new("/repo/objects/Source.cs")));
+    }
 }
