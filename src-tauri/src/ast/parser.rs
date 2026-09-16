@@ -6,10 +6,6 @@ use std::sync::LazyLock;
 use walkdir::WalkDir;
 use tree_sitter::{Language, Node, Parser, Query, QueryCursor, Tree};
 
-static DECORATOR_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)").unwrap()
-});
-
 static FALLBACK_CALL_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"([a-zA-Z0-9_]+)\(").unwrap()
 });
@@ -636,8 +632,9 @@ fn is_ignored(path: &Path) -> bool {
         || s.contains("/build")
         || s.contains("/.venv")
         || s.contains("/__pycache__")
-        || s.contains("/bin")
-        || s.contains("/obj")
+        || path.components().any(|component| {
+            matches!(component.as_os_str().to_str(), Some("bin" | "obj"))
+        })
 }
 
 fn extract_module_cluster(file_path: &str) -> String {
@@ -853,6 +850,12 @@ fn strip_jvm_source_root(file_path: &str) -> String {
 }
 
 fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
+    static DECORATOR_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+    let re = DECORATOR_RE.get_or_init(|| {
+        regex::Regex::new(r"[@\[]\s*([A-Za-z_][A-Za-z0-9_]*)")
+            .expect("decorator regex must be valid")
+    });
     let mut decorators = Vec::new();
     let mut walker = node.walk();
 
@@ -867,7 +870,7 @@ fn extract_decorators(node: Node, source: &[u8]) -> Vec<String> {
             Err(_) => continue,
         };
 
-        for cap in DECORATOR_RE.captures_iter(text) {
+        for cap in re.captures_iter(text) {
             if let Some(m) = cap.get(1) {
                 let value = m.as_str().to_string();
                 if !decorators.contains(&value) {
@@ -972,4 +975,18 @@ fn fallback_extract_symbols(content: &str, file_path: &str, ext: &str) -> Vec<As
         }
     }
     symbols
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_ignored;
+    use std::path::Path;
+
+    #[test]
+    fn ignores_dotnet_build_directories_by_component() {
+        assert!(is_ignored(Path::new("/repo/bin/Debug/Generated.cs")));
+        assert!(is_ignored(Path::new("/repo/obj/Debug/net8.0/App.g.cs")));
+        assert!(!is_ignored(Path::new("/repo/binary/Source.cs")));
+        assert!(!is_ignored(Path::new("/repo/objects/Source.cs")));
+    }
 }
