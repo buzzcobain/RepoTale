@@ -148,5 +148,20 @@ fn every_fixture_produces_a_connected_scaffold() {
             assert!(symbol.end_line >= symbol.start_line);
             assert!(!symbol.snippet.is_empty(), "{} has an empty snippet", symbol.name);
         }
+
+        for node in &scaffold.nodes {
+            assert!(node.cluster.is_some(), "node {} missing cluster", node.id);
+        }
     }
+}
+
+#[test]
+fn csharp_fixture_resolves_controller_service_call_edges() {
+    let dir = fixture_dir("csharp-sample");
+    let mut parser = RepoAstParser::new();
+    let scaffold = parser.parse_repository(&dir);
+
+    assert!(scaffold.edges.iter().any(|e| {
+        e.source.contains("WeatherForecastController") && e.target.contains("WeatherService")
+    }), "expected call edge between controller and weather service");
 }

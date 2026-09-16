@@ -10,6 +10,8 @@ import {
 import { RepoTaleLogoLockup } from '../common/RepoTaleLogo';
 import { ContributorsBar } from './ContributorsBar';
 
+import { HOW_IT_WORKS_STEPS } from '../../services/sharedExportTokens';
+
 export const NarrativePane: React.FC = () => {
   const { story, activeChapterIndex, setActiveChapterIndex, loadStory } = useStory();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,38 +98,21 @@ export const NarrativePane: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-                <div className="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                  <FileCode2 className="w-3.5 h-3.5" />
-                  <span>01. INGEST</span>
-                </div>
-                <h3 className="text-xs font-semibold text-slate-200 mb-1">Point to Any Codebase</h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Provide a GitHub URL or local repository folder. Tree-sitter extracts functions, call-sites, and imports across TS, Python, Rust, and Go.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-                <div className="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                  <Map className="w-3.5 h-3.5" />
-                  <span>02. VISUALIZE</span>
-                </div>
-                <h3 className="text-xs font-semibold text-slate-200 mb-1">Auto-Generate Story</h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Generates an interactive chapter-by-chapter guided walkthrough synchronized with an animated React Flow call graph.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
-                <div className="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>03. PUBLISH</span>
-                </div>
-                <h3 className="text-xs font-semibold text-slate-200 mb-1">Host Free Anywhere</h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Emits a zero-dependency <code className="px-1 py-0.5 rounded bg-base-200 text-slate-300 font-mono text-[10px]">/docs/index.html</code>. Host 100% free on GitHub Pages, Netlify, Cloudflare, or your custom domain.
-                </p>
-              </div>
+              {HOW_IT_WORKS_STEPS.map((item, idx) => {
+                const StepIcon = item.icon === 'code' ? FileCode2 : item.icon === 'map' ? Map : Globe;
+                return (
+                  <div key={idx} className="p-3.5 rounded-lg bg-base-100 border border-base-300 shadow-none">
+                    <div className="text-[10px] font-mono font-semibold text-primary mb-1 flex items-center gap-1.5">
+                      <StepIcon className="w-3.5 h-3.5" />
+                      <span>{item.step}</span>
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-200 mb-1">{item.title}</h3>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

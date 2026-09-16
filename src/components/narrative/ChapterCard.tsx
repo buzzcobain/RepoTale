@@ -13,6 +13,13 @@ interface ChapterCardProps {
 export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActive }) => {
   const { selectNode, selectedNodeId } = useStory();
 
+  const activeNodes = Array.isArray(chapter?.activeNodes) ? chapter.activeNodes : [];
+  const codeSnippets = Array.isArray(chapter?.codeSnippets) ? chapter.codeSnippets : [];
+  const narrative = chapter?.narrative || 'Detailed functional walkthrough of this component.';
+  const summary = chapter?.summary || 'Architectural flow overview';
+  const title = chapter?.title || `Chapter ${chapter?.chapterNumber || index + 1}`;
+  const chapterNumber = chapter?.chapterNumber || index + 1;
+
   return (
     <div
       id={`chapter-card-${index}`}
@@ -33,7 +40,7 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
-            Chapter {chapter.chapterNumber}
+            Chapter {chapterNumber}
           </span>
           {isActive && (
             <span className="badge badge-xs badge-outline border-primary/50 text-primary font-mono gap-1 py-1">
@@ -45,23 +52,23 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
 
       {/* Chapter Title */}
       <h3 className="text-lg font-bold text-slate-100 tracking-tight mb-2">
-        {chapter.title}
+        {title}
       </h3>
 
       {/* Summary */}
       <p className="text-xs text-slate-300 mb-4 leading-relaxed bg-base-100/70 p-3 rounded-lg border border-base-300">
-        {chapter.summary}
+        {summary}
       </p>
 
       {/* Narrative Body */}
       <div className="text-xs text-slate-300/90 leading-relaxed space-y-2.5 font-normal mb-5">
-        {chapter.narrative.split('\n\n').map((paragraph, pIdx) => (
+        {narrative.split('\n\n').map((paragraph, pIdx) => (
           <p key={pIdx}>{paragraph}</p>
         ))}
       </div>
 
       {/* Focused Node Banner if selected from diagram */}
-      {selectedNodeId && (chapter.activeNodes.includes(selectedNodeId) || chapter.codeSnippets.some(s => selectedNodeId.includes(s.filePath))) && (
+      {selectedNodeId && (activeNodes.includes(selectedNodeId) || codeSnippets.some(s => selectedNodeId.includes(s.filePath || ''))) && (
         <div className="mb-4 p-2.5 rounded-lg bg-base-300/80 border border-primary/40 flex items-center justify-between text-xs text-slate-200">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary" />
@@ -79,14 +86,14 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
       )}
 
       {/* Active Symbols / Nodes Pills */}
-      {chapter.activeNodes.length > 0 && (
+      {activeNodes.length > 0 && (
         <div className="mb-4">
           <div className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
             <Box className="w-3.5 h-3.5 text-slate-400" />
             <span>Active Graph Symbols:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {chapter.activeNodes.map((nodeId) => {
+            {activeNodes.map((nodeId) => {
               const label = nodeId.split(':').pop() || nodeId;
               const isSelected = selectedNodeId === nodeId;
               return (
@@ -109,12 +116,12 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({ chapter, index, isActi
       )}
 
       {/* Code Snippets List */}
-      {chapter.codeSnippets.length > 0 && (
+      {codeSnippets.length > 0 && (
         <div className="space-y-4 pt-2">
-          {chapter.codeSnippets.map((snip, sIdx) => {
+          {codeSnippets.map((snip, sIdx) => {
             const isSnippetHighlighted = !!selectedNodeId && (
-              selectedNodeId.includes(snip.filePath) ||
-              snip.code.includes(selectedNodeId.split(':').pop() || '')
+              selectedNodeId.includes(snip.filePath || '') ||
+              (snip.code || '').includes(selectedNodeId.split(':').pop() || '')
             );
             return (
               <CodeSnippetBlock

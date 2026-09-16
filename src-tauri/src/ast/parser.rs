@@ -1,8 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::fs;
+use std::collections::HashSet;
+use std::sync::LazyLock;
 use walkdir::WalkDir;
 use tree_sitter::{Language, Node, Parser, Query, QueryCursor, Tree};
+
+static FALLBACK_CALL_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"([a-zA-Z0-9_]+)\(").unwrap()
+});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AstSymbol {
@@ -33,6 +39,8 @@ pub struct AstNodeScaffold {
     pub file_path: String,
     pub line_range: (usize, usize),
     pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cluster: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,9 +146,10 @@ impl RepoAstParser {
             }
         }
 
-        // Convert symbols to nodes
+        // Convert symbols to nodes with semantic cluster grouping
         for sym in &symbols {
             let id = format!("{}:{}", sym.file_path, sym.name);
+            let cluster = extract_module_cluster(&sym.file_path);
             nodes.push(AstNodeScaffold {
                 id: id.clone(),
                 label: sym.name.clone(),
@@ -148,24 +157,90 @@ impl RepoAstParser {
                 file_path: sym.file_path.clone(),
                 line_range: (sym.start_line, sym.end_line),
                 description: format!("{} in {}", sym.kind, sym.file_path),
+                cluster: Some(cluster),
             });
         }
 
-        // Construct edges based on call relationships and file imports
+        // Construct edges based on deterministic call relationships and import scopes
         let mut edge_count = 0;
+        let mut created_edges = HashSet::new();
+
         for sym in &symbols {
             let source_id = format!("{}:{}", sym.file_path, sym.name);
+            let source_dir = Path::new(&sym.file_path)
+                .parent()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
+
             for called_fn in &sym.calls {
-                // Find matching target symbol
-                if let Some(target_sym) = symbols.iter().find(|s| &s.name == called_fn && s.file_path != sym.file_path) {
-                    let target_id = format!("{}:{}", target_sym.file_path, target_sym.name);
-                    edge_count += 1;
-                    edges.push(AstEdgeScaffold {
-                        id: format!("e{}", edge_count),
-                        source: source_id.clone(),
-                        target: target_id,
-                        label: Some("calls".to_string()),
+                // Find potential target symbols matching called name
+                let matching_targets: Vec<&AstSymbol> = symbols
+                    .iter()
+                    .filter(|s| &s.name == called_fn && s.file_path != sym.file_path)
+                    .collect();
+
+                if matching_targets.is_empty() {
+                    continue;
+                }
+
+                // Resolve best candidate using imports and module proximity
+                let best_target = matching_targets.iter().copied().find(|target| {
+                    let target_file_no_ext = Path::new(&target.file_path)
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default();
+
+                    let target_dir = Path::new(&target.file_path)
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
+
+                    // 1. Direct import or namespace/package match
+                    let imported = sym.imports.iter().any(|imp| {
+                        let imp_last = imp.split(&['.', '/', ':']).last().unwrap_or(imp);
+                        imp.contains(&target.file_path)
+                            || imp.contains(&target_file_no_ext)
+                            || imp.contains(&target.name)
+                            || (!target_dir.is_empty() && (imp_last.eq_ignore_ascii_case(&target_dir) || imp.to_lowercase().contains(&target_dir.to_lowercase())))
                     });
+                    if imported {
+                        return true;
+                    }
+
+                    // 2. Same directory / package module proximity
+                    if !source_dir.is_empty() && source_dir == target_dir {
+                        return true;
+                    }
+
+                    false
+                }).or_else(|| {
+                    // 3. Fallback: only connect if target is unambiguous across repo
+                    if matching_targets.len() == 1 {
+                        let target = matching_targets[0];
+                        let is_common_name = matches!(
+                            called_fn.as_str(),
+                            "new" | "get" | "set" | "run" | "init" | "handle" | "save" | "find" | "create" | "update" | "delete" | "validate"
+                        );
+                        if !is_common_name || target.node_type == "service" || target.node_type == "entry" {
+                            return Some(target);
+                        }
+                    }
+                    None
+                });
+
+                if let Some(target_sym) = best_target {
+                    let target_id = format!("{}:{}", target_sym.file_path, target_sym.name);
+                    let edge_key = (source_id.clone(), target_id.clone());
+                    if !created_edges.contains(&edge_key) {
+                        created_edges.insert(edge_key);
+                        edge_count += 1;
+                        edges.push(AstEdgeScaffold {
+                            id: format!("e{}", edge_count),
+                            source: source_id.clone(),
+                            target: target_id,
+                            label: Some("calls".to_string()),
+                        });
+                    }
                 }
             }
         }
@@ -178,63 +253,35 @@ impl RepoAstParser {
     }
 
     fn parse_ts_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
-        let mut symbols = Vec::new();
         let content = match fs::read_to_string(full_path) {
             Ok(c) => c,
-            Err(_) => return symbols,
+            Err(_) => return Vec::new(),
         };
 
         let tree = match self.ts_parser.parse(&content, None) {
             Some(t) => t,
-            None => return symbols,
+            None => return Vec::new(),
         };
 
-        let lines: Vec<&str> = content.lines().collect();
-        let query_str = r#"
-            (function_declaration name: (identifier) @fn.name) @fn.def
-            (class_declaration name: (type_identifier) @class.name) @class.def
-            (method_definition name: (property_identifier) @method.name) @method.def
-            (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @var.name))) @var.def
-        "#;
         let lang: Language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
-        if let Ok(query) = Query::new(&lang, query_str) {
-            let mut cursor = QueryCursor::new();
-            let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
+        let imports = collect_query_texts(&lang, TS_IMPORT_QUERY, &tree, &content);
 
-            for m in matches {
-                for cap in m.captures {
-                    let node = cap.node;
-                    let text = node.utf8_text(content.as_bytes()).unwrap_or("").to_string();
-                    let start_line = node.start_position().row + 1;
-                    let end_line = node.end_position().row + 1;
-
-                    let (kind, name) = if cap.index == 0 || cap.index == 1 {
-                        ("function", text)
-                    } else if cap.index == 2 || cap.index == 3 {
-                        ("class", text)
-                    } else {
-                        ("service", text)
-                    };
-
-                    let node_type = classify_node_type(rel_path, &name);
-                    let snippet = get_snippet(&lines, start_line, end_line);
-
-                    symbols.push(AstSymbol {
-                        name,
-                        kind: kind.to_string(),
-                        file_path: rel_path.to_string(),
-                        start_line,
-                        end_line,
-                        node_type,
-                        calls: extract_calls(&content, start_line, end_line),
-                        imports: Vec::new(),
-                        snippet,
-                    });
+        let mut symbols = build_symbols(
+            &lang,
+            TS_SYMBOL_QUERY,
+            Some(TS_CALL_QUERY),
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, kind, _decorators| {
+                if kind == "interface" || kind == "type" {
+                    return "data".to_string();
                 }
-            }
-        }
+                classify_node_type(file_path, name)
+            },
+        );
 
-        // Fallback simple regex extraction if tree-sitter returned empty
         if symbols.is_empty() {
             symbols = fallback_extract_symbols(&content, rel_path, "ts");
         }
@@ -243,51 +290,31 @@ impl RepoAstParser {
     }
 
     fn parse_py_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
-        let mut symbols = Vec::new();
         let content = match fs::read_to_string(full_path) {
             Ok(c) => c,
-            Err(_) => return symbols,
+            Err(_) => return Vec::new(),
         };
 
         let tree = match self.python_parser.parse(&content, None) {
             Some(t) => t,
-            None => return symbols,
+            None => return Vec::new(),
         };
 
-        let lines: Vec<&str> = content.lines().collect();
-        let query_str = r#"
-            (function_definition name: (identifier) @fn.name) @fn.def
-            (class_definition name: (identifier) @class.name) @class.def
-        "#;
         let lang: Language = tree_sitter_python::LANGUAGE.into();
-        if let Ok(query) = Query::new(&lang, query_str) {
-            let mut cursor = QueryCursor::new();
-            let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
+        let imports = collect_query_texts(&lang, PY_IMPORT_QUERY, &tree, &content);
 
-            for m in matches {
-                for cap in m.captures {
-                    let node = cap.node;
-                    let name = node.utf8_text(content.as_bytes()).unwrap_or("").to_string();
-                    let start_line = node.start_position().row + 1;
-                    let end_line = node.end_position().row + 1;
-                    let kind = if cap.index == 0 { "function" } else { "class" };
-                    let node_type = classify_node_type(rel_path, &name);
-                    let snippet = get_snippet(&lines, start_line, end_line);
-
-                    symbols.push(AstSymbol {
-                        name,
-                        kind: kind.to_string(),
-                        file_path: rel_path.to_string(),
-                        start_line,
-                        end_line,
-                        node_type,
-                        calls: extract_calls(&content, start_line, end_line),
-                        imports: Vec::new(),
-                        snippet,
-                    });
-                }
-            }
-        }
+        let mut symbols = build_symbols(
+            &lang,
+            PY_SYMBOL_QUERY,
+            Some(PY_CALL_QUERY),
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, _kind, _decorators| {
+                classify_node_type(file_path, name)
+            },
+        );
 
         if symbols.is_empty() {
             symbols = fallback_extract_symbols(&content, rel_path, "py");
@@ -297,52 +324,37 @@ impl RepoAstParser {
     }
 
     fn parse_rs_file(&mut self, full_path: &Path, rel_path: &str) -> Vec<AstSymbol> {
-        let mut symbols = Vec::new();
         let content = match fs::read_to_string(full_path) {
             Ok(c) => c,
-            Err(_) => return symbols,
+            Err(_) => return Vec::new(),
         };
 
         let tree = match self.rust_parser.parse(&content, None) {
             Some(t) => t,
-            None => return symbols,
+            None => return Vec::new(),
         };
 
-        let lines: Vec<&str> = content.lines().collect();
-        let query_str = r#"
-            (function_item name: (identifier) @fn.name) @fn.def
-            (struct_item name: (type_identifier) @struct.name) @struct.def
-            (enum_item name: (type_identifier) @enum.name) @enum.def
-        "#;
         let lang: Language = tree_sitter_rust::LANGUAGE.into();
-        if let Ok(query) = Query::new(&lang, query_str) {
-            let mut cursor = QueryCursor::new();
-            let matches = cursor.matches(&query, tree.root_node(), content.as_bytes());
+        let imports = collect_query_texts(&lang, RS_IMPORT_QUERY, &tree, &content);
 
-            for m in matches {
-                for cap in m.captures {
-                    let node = cap.node;
-                    let name = node.utf8_text(content.as_bytes()).unwrap_or("").to_string();
-                    let start_line = node.start_position().row + 1;
-                    let end_line = node.end_position().row + 1;
-                    let kind = if cap.index == 0 { "function" } else { "struct" };
-                    let node_type = classify_node_type(rel_path, &name);
-                    let snippet = get_snippet(&lines, start_line, end_line);
-
-                    symbols.push(AstSymbol {
-                        name,
-                        kind: kind.to_string(),
-                        file_path: rel_path.to_string(),
-                        start_line,
-                        end_line,
-                        node_type,
-                        calls: extract_calls(&content, start_line, end_line),
-                        imports: Vec::new(),
-                        snippet,
-                    });
+        let mut symbols = build_symbols(
+            &lang,
+            RS_SYMBOL_QUERY,
+            Some(RS_CALL_QUERY),
+            &tree,
+            &content,
+            rel_path,
+            &imports,
+            &|file_path, name, kind, _decorators| {
+                if kind == "struct" || kind == "enum" {
+                    return "data".to_string();
                 }
-            }
-        }
+                if kind == "trait" {
+                    return "service".to_string();
+                }
+                classify_node_type(file_path, name)
+            },
+        );
 
         if symbols.is_empty() {
             symbols = fallback_extract_symbols(&content, rel_path, "rs");
@@ -374,6 +386,7 @@ impl RepoAstParser {
         let mut symbols = build_symbols(
             &lang,
             GO_SYMBOL_QUERY,
+            Some(GO_CALL_QUERY),
             &tree,
             &content,
             rel_path,
@@ -419,6 +432,7 @@ impl RepoAstParser {
         let mut symbols = build_symbols(
             &lang,
             JAVA_SYMBOL_QUERY,
+            Some(JAVA_CALL_QUERY),
             &tree,
             &content,
             rel_path,
@@ -464,6 +478,7 @@ impl RepoAstParser {
         let mut symbols = build_symbols(
             &lang,
             CSHARP_SYMBOL_QUERY,
+            Some(CSHARP_CALL_QUERY),
             &tree,
             &content,
             rel_path,
@@ -493,6 +508,60 @@ impl RepoAstParser {
     }
 }
 
+// Tree-sitter AST queries
+const TS_SYMBOL_QUERY: &str = r#"
+    (function_declaration name: (identifier) @function.name) @function.def
+    (class_declaration name: (type_identifier) @class.name) @class.def
+    (method_definition name: (property_identifier) @method.name) @method.def
+    (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @function.name value: [(arrow_function) (function_expression)]))) @function.def
+    (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @const.name))) @const.def
+    (interface_declaration name: (type_identifier) @interface.name) @interface.def
+    (type_alias_declaration name: (type_identifier) @type.name) @type.def
+"#;
+
+const TS_IMPORT_QUERY: &str = r#"
+    (import_statement source: (string) @import.path)
+    (import_clause (named_imports (import_specifier name: (identifier) @import.name)))
+"#;
+
+const TS_CALL_QUERY: &str = r#"
+    (call_expression function: (identifier) @call.name)
+    (call_expression function: (member_expression property: (property_identifier) @call.name))
+"#;
+
+const PY_SYMBOL_QUERY: &str = r#"
+    (function_definition name: (identifier) @function.name) @function.def
+    (class_definition name: (identifier) @class.name) @class.def
+"#;
+
+const PY_IMPORT_QUERY: &str = r#"
+    (import_statement name: (dotted_name) @import.name)
+    (import_from_statement module_name: (dotted_name) @import.name)
+"#;
+
+const PY_CALL_QUERY: &str = r#"
+    (call function: (identifier) @call.name)
+    (call function: (attribute attribute: (identifier) @call.name))
+"#;
+
+const RS_SYMBOL_QUERY: &str = r#"
+    (function_item name: (identifier) @function.name) @function.def
+    (struct_item name: (type_identifier) @struct.name) @struct.def
+    (enum_item name: (type_identifier) @enum.name) @enum.def
+    (trait_item name: (type_identifier) @trait.name) @trait.def
+"#;
+
+const RS_IMPORT_QUERY: &str = r#"
+    (use_declaration argument: (scoped_identifier) @import.name)
+    (use_declaration argument: (identifier) @import.name)
+"#;
+
+const RS_CALL_QUERY: &str = r#"
+    (call_expression function: (identifier) @call.name)
+    (call_expression function: (scoped_identifier name: (identifier) @call.name))
+    (call_expression function: (field_expression field: (field_identifier) @call.name))
+"#;
+
 const GO_SYMBOL_QUERY: &str = r#"
     (function_declaration name: (identifier) @function.name) @function.def
     (method_declaration name: (field_identifier) @method.name) @method.def
@@ -513,6 +582,11 @@ const GO_GOROUTINE_QUERY: &str = r#"
     (go_statement (call_expression function: (selector_expression field: (field_identifier) @goroutine.name)))
 "#;
 
+const GO_CALL_QUERY: &str = r#"
+    (call_expression function: (identifier) @call.name)
+    (call_expression function: (selector_expression field: (field_identifier) @call.name))
+"#;
+
 const JAVA_SYMBOL_QUERY: &str = r#"
     (class_declaration name: (identifier) @class.name) @class.def
     (interface_declaration name: (identifier) @interface.name) @interface.def
@@ -523,6 +597,11 @@ const JAVA_SYMBOL_QUERY: &str = r#"
 
 const JAVA_IMPORT_QUERY: &str = r#"
     (import_declaration (scoped_identifier) @import.name)
+"#;
+
+const JAVA_CALL_QUERY: &str = r#"
+    (method_invocation name: (identifier) @call.name)
+    (object_creation_expression type: (type_identifier) @call.name)
 "#;
 
 const CSHARP_SYMBOL_QUERY: &str = r#"
@@ -538,6 +617,12 @@ const CSHARP_IMPORT_QUERY: &str = r#"
     (using_directive (identifier) @import.name)
 "#;
 
+const CSHARP_CALL_QUERY: &str = r#"
+    (invocation_expression expression: (identifier) @call.name)
+    (invocation_expression expression: (member_access_expression name: (identifier) @call.name))
+    (object_creation_expression type: (identifier) @call.name)
+"#;
+
 fn is_ignored(path: &Path) -> bool {
     let s = path.to_string_lossy();
     s.contains("/.git")
@@ -550,6 +635,24 @@ fn is_ignored(path: &Path) -> bool {
         || path.components().any(|component| {
             matches!(component.as_os_str().to_str(), Some("bin" | "obj"))
         })
+}
+
+fn extract_module_cluster(file_path: &str) -> String {
+    let clean = file_path
+        .trim_start_matches("./")
+        .trim_start_matches('/');
+    
+    let parts: Vec<&str> = clean.split('/').collect();
+    if parts.len() > 1 {
+        if parts[0] == "src" || parts[0] == "lib" || parts[0] == "internal" || parts[0] == "pkg" {
+            if parts.len() > 2 {
+                return format!("{}/{}", parts[0], parts[1]);
+            }
+            return parts[0].to_string();
+        }
+        return parts[0].to_string();
+    }
+    "root".to_string()
 }
 
 fn classify_node_type(file_path: &str, symbol_name: &str) -> String {
@@ -592,9 +695,46 @@ fn collect_query_texts(lang: &Language, query_str: &str, tree: &Tree, content: &
     results
 }
 
+fn extract_calls_from_node(
+    lang: &Language,
+    call_query_str: &str,
+    node: Node,
+    content: &str,
+) -> Vec<String> {
+    let mut calls = Vec::new();
+    let query = match Query::new(lang, call_query_str) {
+        Ok(q) => q,
+        Err(_) => return calls,
+    };
+
+    let mut cursor = QueryCursor::new();
+    let matches = cursor.matches(&query, node, content.as_bytes());
+    for m in matches {
+        for cap in m.captures {
+            if let Ok(text) = cap.node.utf8_text(content.as_bytes()) {
+                let name = text.trim().to_string();
+                if !name.is_empty()
+                    && !calls.contains(&name)
+                    && name != "if"
+                    && name != "for"
+                    && name != "while"
+                    && name != "switch"
+                    && name != "match"
+                    && name != "catch"
+                {
+                    calls.push(name);
+                }
+            }
+        }
+    }
+
+    calls
+}
+
 fn build_symbols(
     lang: &Language,
     query_str: &str,
+    call_query_str: Option<&str>,
     tree: &Tree,
     content: &str,
     rel_path: &str,
@@ -646,6 +786,16 @@ fn build_symbols(
         let node_type = classify(rel_path, &name, &kind, &decorators);
         let snippet = get_snippet(&lines, start_line, end_line);
 
+        let mut calls = if let Some(c_query) = call_query_str {
+            extract_calls_from_node(lang, c_query, node, content)
+        } else {
+            Vec::new()
+        };
+
+        if calls.is_empty() {
+            calls = extract_calls(content, start_line, end_line);
+        }
+
         symbols.push(AstSymbol {
             name,
             kind,
@@ -653,7 +803,7 @@ fn build_symbols(
             start_line,
             end_line,
             node_type,
-            calls: extract_calls(content, start_line, end_line),
+            calls,
             imports: imports.to_vec(),
             snippet,
         });
@@ -775,9 +925,8 @@ fn extract_calls(content: &str, start_line: usize, end_line: usize) -> Vec<Strin
         return Vec::new();
     }
     let snippet = lines[(start_line - 1)..end_line.min(lines.len())].join("\n");
-    let re = regex::Regex::new(r"([a-zA-Z0-9_]+)\(").unwrap();
     let mut calls = Vec::new();
-    for cap in re.captures_iter(&snippet) {
+    for cap in FALLBACK_CALL_RE.captures_iter(&snippet) {
         if let Some(m) = cap.get(1) {
             let name = m.as_str().to_string();
             if !calls.contains(&name) && name != "if" && name != "for" && name != "while" && name != "switch" {
